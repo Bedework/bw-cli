@@ -24,6 +24,7 @@ import org.bedework.util.jolokia.JolokiaClient;
 import java.util.List;
 
 import static org.bedework.bwcli.copiedCalFacade.Configurations.cmdutilMbean;
+import static org.bedework.bwcli.copiedCalFacade.Configurations.dbConfMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.dumpRestoreMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.indexMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.systemMbean;
@@ -55,13 +56,13 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> coreSchema() throws Throwable {
-    writeVal(dumpRestoreMbean, "Export", "true");
+    writeVal(dbConfMbean, "Export", "true");
 
-    execute(dumpRestoreMbean, "schema");
+    execute(dbConfMbean, "schema");
 
-    waitCompletion(dumpRestoreMbean);
+    waitCompletion(dbConfMbean);
 
-    return execStringList(dumpRestoreMbean, "schemaStatus");
+    return execStringList(dbConfMbean, "schemaStatus");
   }
 
   public String listIndexes() throws Throwable {
