@@ -15,10 +15,11 @@ public class CmdSelfRegAdduser extends JmxCmd {
   }
 
   public void doExecute() throws Throwable {
-    final String account = cli.word("account");
-    final String first = cli.word("first");
-    final String last = cli.word("last");
-    final String pw = cli.word("pw");
-    info(jcc.selfregAddUser(account, first, last, pw));
+    final String account = cli.string("account");
+    final String first = cli.string("first");
+    final String last = cli.string("last");
+    final String email = cli.string("email");
+    final String pw = cli.string("pw");
+    info(jcc.selfregAddUser(account, first, last, email, pw));
   }
 }

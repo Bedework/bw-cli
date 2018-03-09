@@ -179,9 +179,10 @@ public class JolokiaConfigClient extends JolokiaClient {
   public String selfregAddUser(final String account,
                                final String first,
                                final String last,
+                               final String email,
                                final String pw) throws Throwable {
     return execString(selfregMbean, "addUser",
-                      account, first, last, pw);
+                      account, first, last, email, pw);
   }
 
   public List<String> selfregSchema() throws Throwable {
