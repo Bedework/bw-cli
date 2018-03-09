@@ -16,6 +16,8 @@ import org.bedework.bwcli.jmxcmd.CmdRebuildIdx;
 import org.bedework.bwcli.jmxcmd.CmdRebuildStatus;
 import org.bedework.bwcli.jmxcmd.CmdReindex;
 import org.bedework.bwcli.jmxcmd.CmdRestoreCalData;
+import org.bedework.bwcli.jmxcmd.CmdSelfRegAdduser;
+import org.bedework.bwcli.jmxcmd.CmdSelfregSchema;
 import org.bedework.bwcli.jmxcmd.CmdSync;
 import org.bedework.bwcli.jmxcmd.bwengine.CmdSystem;
 import org.bedework.bwcli.toolcmd.ToolCmd;
@@ -69,6 +71,9 @@ public class BwCli extends JolokiaCli {
     register(new CmdRestoreCalData());
 
     register(new CmdSync());
+
+    register(new CmdSelfregSchema());
+    register(new CmdSelfRegAdduser());
 
     // jmx - engine
 

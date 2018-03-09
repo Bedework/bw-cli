@@ -80,4 +80,6 @@ public interface Configurations extends Serializable {
   String indexMbean = indexServicePrefix + indexingNamePart;
 
   String systemMbean = systemServicePrefix + systemPropsNamePart;
+
+  String selfregMbean = "org.bedework.selfreg:service=config";
 }

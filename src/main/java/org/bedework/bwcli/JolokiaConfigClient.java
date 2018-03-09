@@ -27,6 +27,7 @@ import static org.bedework.bwcli.copiedCalFacade.Configurations.cmdutilMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.dbConfMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.dumpRestoreMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.indexMbean;
+import static org.bedework.bwcli.copiedCalFacade.Configurations.selfregMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.systemMbean;
 
 /**
@@ -56,13 +57,7 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> coreSchema() throws Throwable {
-    writeVal(dbConfMbean, "Export", "true");
-
-    execute(dbConfMbean, "schema");
-
-    waitCompletion(dbConfMbean);
-
-    return execStringList(dbConfMbean, "schemaStatus");
+    return doSchema(dbConfMbean);
   }
 
   public String listIndexes() throws Throwable {
@@ -142,7 +137,7 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public Integer getAutoKillMinutes() throws Throwable {
-    String s = readString(systemMbean, "AutoKillMinutes");
+    final String s = readString(systemMbean, "AutoKillMinutes");
     return new Integer(s);
   }
 
@@ -178,4 +173,31 @@ public class JolokiaConfigClient extends JolokiaClient {
   public void setSyncPrivKeys(final String val) throws Throwable {
     writeVal(syncEngineMbean, "PrivKeys", val);
   }
+
+  /* ----------- selfreg ----------------- */
+
+  public String selfregAddUser(final String account,
+                               final String first,
+                               final String last,
+                               final String pw) throws Throwable {
+    return execString(selfregMbean, "addUser",
+                      account, first, last, pw);
+  }
+
+  public List<String> selfregSchema() throws Throwable {
+    return doSchema(selfregMbean);
+  }
+
+  /* ----------- generic ----------------- */
+
+  public List<String> doSchema(final String mbean) throws Throwable {
+    writeVal(mbean, "Export", "true");
+
+    execute(mbean, "schema");
+
+    waitCompletion(mbean);
+
+    return execStringList(mbean, "schemaStatus");
+  }
+
 }
