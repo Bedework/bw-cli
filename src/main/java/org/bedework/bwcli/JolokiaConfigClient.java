@@ -153,13 +153,7 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> syncSchema() throws Throwable {
-    writeVal(syncEngineMbean, "Export", "true");
-
-    execute(syncEngineMbean, "schema");
-
-    waitCompletion(syncEngineMbean);
-
-    return execStringList(syncEngineMbean, "schemaStatus");
+    return doSchema(syncEngineMbean);
   }
 
   public void syncStart() throws Throwable {
