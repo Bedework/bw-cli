@@ -26,6 +26,7 @@ import java.util.List;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.cmdutilMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.dbConfMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.dumpRestoreMbean;
+import static org.bedework.bwcli.copiedCalFacade.Configurations.eventregMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.indexMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.selfregMbean;
 import static org.bedework.bwcli.copiedCalFacade.Configurations.systemMbean;
@@ -57,7 +58,7 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> coreSchema() throws Throwable {
-    return doSchema(dbConfMbean);
+    return doSchema(dbConfMbean, true);
   }
 
   public String listIndexes() throws Throwable {
@@ -153,7 +154,7 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> syncSchema() throws Throwable {
-    return doSchema(syncEngineMbean);
+    return doSchema(syncEngineMbean, true);
   }
 
   public void syncStart() throws Throwable {
@@ -180,13 +181,20 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> selfregSchema() throws Throwable {
-    return doSchema(selfregMbean);
+    return doSchema(selfregMbean, true);
+  }
+
+  /* ----------- selfreg ----------------- */
+
+  public List<String> eventregSchema(final boolean export) throws Throwable {
+    return doSchema(eventregMbean, export);
   }
 
   /* ----------- generic ----------------- */
 
-  public List<String> doSchema(final String mbean) throws Throwable {
-    writeVal(mbean, "Export", "true");
+  public List<String> doSchema(final String mbean,
+                               final boolean export) throws Throwable {
+    writeVal(mbean, "Export", String.valueOf(export));
 
     execute(mbean, "schema");
 
