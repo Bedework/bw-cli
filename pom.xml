@@ -4,7 +4,7 @@
 	<artifactId>bw-cli</artifactId>
 	<version>4.0.0-SNAPSHOT</version>
 	<name>bw-cli</name>
-  <description>A generic WebDAV servlet</description>
+  <description>A command line client for bedework system admin</description>
   <url>https://github.com/Bedework/bw-cli</url>
 
 	<properties>
@@ -15,7 +15,7 @@
 
 		<!-- Bedework Versions -->
     <bw-access.version>4.0.1</bw-access.version>
-    <bw-util.version>4.0.17-SNAPSHOT</bw-util.version>
+    <bw-util.version>4.0.18</bw-util.version>
 
 		<!-- Third Party Library Versions -->
 		<commons-codec.version>1.5</commons-codec.version>
@@ -23,7 +23,6 @@
     <http-core.version>4.4.8</http-core.version>
     <jackson.version>2.3.1</jackson.version>
 		<junit.version>4.8.2</junit.version>
-		<ical4j.version>head-20100601</ical4j.version>
 		<log4j.version>1.2.15</log4j.version>
     <servlet-api.version>2.5</servlet-api.version>
 	</properties>
@@ -41,16 +40,15 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:git@github.com:Bedework/bw-webdav.git</connection>
-    <developerConnection>scm:git:git@github.com:Bedework/bw-webdav.git</developerConnection>
-    <url>https://github.com/Bedework/bw-webdav</url>
-    <tag>HEAD</tag>
+    <connection>scm:git:git@github.com:Bedework/bw-cli.git</connection>
+    <developerConnection>scm:git:git@github.com:Bedework/bw-cli.git</developerConnection>
+    <url>https://github.com/Bedework/bw-util</url>
   </scm>
 
   <issueManagement>
     <system>github</system>
 
-    <url>https://github.com/Bedework/bw-webdav/issues</url>
+    <url>https://github.com/Bedework/bw-cli/issues</url>
   </issueManagement>
 
   <developers>
@@ -245,10 +243,19 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>2.9.1</version>
         <configuration>
-          <!--<additionalparam>-Xdoclint:none</additionalparam>-->
+          <additionalparam>-Xdoclint:none</additionalparam>
           <failOnError>false</failOnError>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.3</version>
+        <configuration>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
