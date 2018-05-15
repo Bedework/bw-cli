@@ -192,6 +192,12 @@ public class JolokiaConfigClient extends JolokiaClient {
 
   /* ----------- generic ----------------- */
 
+  public void setAttr(final String mbean,
+                      final String attrName,
+                      final String val) throws Throwable {
+    writeVal(mbean, attrName, val);
+  }
+
   public List<String> doSchema(final String mbean,
                                final boolean export) throws Throwable {
     writeVal(mbean, "Export", String.valueOf(export));

@@ -9,6 +9,7 @@ import org.bedework.bwcli.copiedCalFacade.responses.AdminGroupsResponse;
 import org.bedework.bwcli.jmxcmd.CmdCalSchema;
 import org.bedework.bwcli.jmxcmd.CmdEventregSchema;
 import org.bedework.bwcli.jmxcmd.CmdIdxStats;
+import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
 import org.bedework.bwcli.jmxcmd.CmdListIdx;
 import org.bedework.bwcli.jmxcmd.CmdMakeIdxProd;
 import org.bedework.bwcli.jmxcmd.CmdNewidx;
@@ -81,6 +82,7 @@ public class BwCli extends JolokiaCli {
     // jmx - engine
 
     register(new CmdSystem());
+    register(new CmdJmxSetAttr());
 
     register(new ToolCmd());
     register(new ToolSource());
