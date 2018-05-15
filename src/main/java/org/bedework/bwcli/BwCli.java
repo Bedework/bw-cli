@@ -124,6 +124,7 @@ public class BwCli extends JolokiaCli {
     String id = null;
     String pw = null;
     String cmd = null;
+    String cmdFile = null;
     String jmxUrl = null;
     boolean debug = false;
 
@@ -157,6 +158,11 @@ public class BwCli extends JolokiaCli {
         }
 
         if (pargs.ifMatch("-cmds")) {
+          cmdFile = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("-cmd")) {
           cmd = pargs.next();
           continue;
         }
@@ -168,8 +174,10 @@ public class BwCli extends JolokiaCli {
 
       final BwCli jc = new BwCli(url, jmxUrl, id, pw, debug);
       
-      if (cmd != null) {
+      if (cmdFile != null) {
         jc.setSingleCmd("sou \"" + cmd + "\"");
+      } else if (cmd != null) {
+        jc.setSingleCmd(cmd);
       }
 
       jc.processCmds();
@@ -213,6 +221,8 @@ public class BwCli extends JolokiaCli {
     System.err.println();
     System.err.println("Optional arguments:");
     System.err.println("   url <url>         Url of the jolokia jmx service");
+    System.err.println("   -cmds <qstring>    A path to a file of commands");
+    System.err.println("   -cmd  <qstring>    A single quoted command to execute");
     System.err.println("   debug             To enable debug traces");
   }
 
