@@ -165,6 +165,10 @@ public class JolokiaConfigClient extends JolokiaClient {
     execute(syncEngineMbean, "stop");
   }
 
+  public String syncResched(final String id) throws Throwable {
+    return execString(syncEngineMbean, "rescheduleNow", id);
+  }
+
   public void setSyncPrivKeys(final String val) throws Throwable {
     writeVal(syncEngineMbean, "PrivKeys", val);
   }

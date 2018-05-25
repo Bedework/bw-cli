@@ -17,8 +17,8 @@ public class CmdSync extends JmxCmd {
                   "attrname may be:" +
                   "   HibernateDialect Privkeys, Pubkeys, TimezonesURI\n" +
                   "   SchemaOutFile\n" +
-                  "attrname may be:" +
-                  "   schema, start, stop");
+                  "cmd may be:" +
+                  "   schema [export], start, stop, resched \"id\"");
   }
 
   public void doExecute() throws Throwable {
@@ -51,6 +51,11 @@ public class CmdSync extends JmxCmd {
 
     if ("stop".equals(attrCmd)) {
       jcc.syncStop();
+      return;
+    }
+
+    if ("resched".equals(attrCmd)) {
+      info(jcc.syncResched(cli.string("id")));
       return;
     }
 
