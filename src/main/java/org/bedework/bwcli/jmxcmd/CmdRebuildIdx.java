@@ -10,10 +10,20 @@ package org.bedework.bwcli.jmxcmd;
  */
 public class CmdRebuildIdx extends JmxCmd {
   public CmdRebuildIdx() {
-    super("rebuildidx", null, "Rebuild the indexes");
+    super("rebuildidx", "[resource]", "Rebuild the indexes");
   }
 
   public void doExecute() throws Throwable {
-    multiLine(jcc.rebuildIndexes());
+    String type = cli.word(null);
+
+    if (type == null) {
+      multiLine(jcc.rebuildIndexes());
+      return;
+    }
+
+    if (type.equals("resource")) {
+      multiLine(jcc.rebuildResourceIndexes());
+      return;
+    }
   }
 }

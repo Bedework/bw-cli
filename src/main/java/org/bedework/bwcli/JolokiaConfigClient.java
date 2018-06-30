@@ -85,6 +85,18 @@ public class JolokiaConfigClient extends JolokiaClient {
     return execStringList(indexMbean, "rebuildStatus");
   }
 
+  public List<String> rebuildResourceIndexes() throws Throwable {
+    execute(indexMbean, "rebuildResourceIndex");
+
+    String status;
+    do {
+      status = waitCompletion(indexMbean);
+      multiLine(execStringList(indexMbean, "rebuildStatus"));
+    } while (status.equals(ConfBase.statusTimedout));
+
+    return execStringList(indexMbean, "rebuildStatus");
+  }
+
   public Object indexStats(final String indexName) throws Throwable {
     return exec(indexMbean, "indexStats", indexName);
   }
