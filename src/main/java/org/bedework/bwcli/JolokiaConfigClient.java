@@ -35,8 +35,12 @@ import static org.bedework.bwcli.copiedCalFacade.Configurations.systemMbean;
  * User: mike Date: 12/3/15 Time: 00:32
  */
 public class JolokiaConfigClient extends JolokiaClient {
-  public final static String syncEngineMbean =
+  private final static String syncEngineMbean =
           "org.bedework.synch:service=SynchConf";
+
+  private final static String sysMonitorMbean =
+          "org.bedework.bwengine:service=BwSysMonitor";
+
   // synch connector looks like
   //      org.bedework.synch:service=SynchConf,Type=connector,Name=localBedework
   /**
@@ -83,6 +87,10 @@ public class JolokiaConfigClient extends JolokiaClient {
     } while (status.equals(ConfBase.statusTimedout));
 
     return execStringList(indexMbean, "rebuildStatus");
+  }
+
+  public List<String> sysStats() throws Throwable {
+    return execStringList(sysMonitorMbean, "showValues");
   }
 
   public List<String> rebuildResourceIndexes() throws Throwable {
