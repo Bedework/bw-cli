@@ -10,12 +10,12 @@ package org.bedework.bwcli.jmxcmd;
  */
 public class CmdReindex extends JmxCmd {
   public CmdReindex() {
-    super("reindex", "indexName",
-          "Reindex current index into given index");
+    super("reindex", "doctype",
+          "Reindex current doctype index into a new index");
   }
 
   public void doExecute() throws Throwable {
-    final String indexName = cli.word("indexName");
-    info(jcc.reindex(indexName));
+    final String docType = cli.word("docType");
+    info(jcc.reindex(docType));
   }
 }

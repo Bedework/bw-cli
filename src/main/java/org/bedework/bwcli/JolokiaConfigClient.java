@@ -121,6 +121,10 @@ public class JolokiaConfigClient extends JolokiaClient {
     return execString(indexMbean, "setProdAlias", indexName);
   }
 
+  public String makeAllIdxProd() throws Throwable {
+    return execString(indexMbean, "makeAllProd");
+  }
+
   public List<String> restoreCalData(final String path) throws Throwable {
     if (path != null) {
       writeVal(dumpRestoreMbean, "DataIn", path);
