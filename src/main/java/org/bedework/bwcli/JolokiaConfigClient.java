@@ -21,6 +21,7 @@ package org.bedework.bwcli;
 import org.bedework.util.jmx.ConfBase;
 import org.bedework.util.jolokia.JolokiaClient;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.bedework.bwcli.copiedCalFacade.Configurations.cmdutilMbean;
@@ -93,10 +94,14 @@ public class JolokiaConfigClient extends JolokiaClient {
     return execStringList(sysMonitorMbean, "showValues");
   }
 
-  public List<String> rebuildResourceIndexes() throws Throwable {
-    execute(indexMbean, "rebuildResourceIndex");
+  public List<String> rebuildEntityIndex(final String docType) throws Throwable {
+    String status =
+            execString(indexMbean, "rebuildEntityIndex", docType);
 
-    String status;
+    if (!"Started".equals(status)) {
+      return Collections.singletonList("Rebuild start failed: status was " + status);
+    }
+
     do {
       status = waitCompletion(indexMbean);
       multiLine(execStringList(indexMbean, "rebuildStatus"));
