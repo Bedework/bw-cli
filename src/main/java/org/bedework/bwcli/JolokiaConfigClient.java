@@ -42,6 +42,9 @@ public class JolokiaConfigClient extends JolokiaClient {
   private final static String sysMonitorMbean =
           "org.bedework.bwengine:service=BwSysMonitor";
 
+  private final static String tzsvrMbean =
+          "org.bedework.timezones:service=TzSvr,Type=tzConf,Name=tzConf";
+
   // synch connector looks like
   //      org.bedework.synch:service=SynchConf,Type=connector,Name=localBedework
   /**
@@ -242,4 +245,9 @@ public class JolokiaConfigClient extends JolokiaClient {
     return execStringList(mbean, "schemaStatus");
   }
 
+  /* ----------- timezone server ----------------- */
+
+  public String tzRefreshData() throws Throwable {
+    return execString(tzsvrMbean, "refreshData");
+  }
 }
