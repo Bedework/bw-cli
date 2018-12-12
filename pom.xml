@@ -14,8 +14,9 @@
 		<maven.source.plugin.version>2.1.2</maven.source.plugin.version>
 
 		<!-- Bedework Versions -->
-    <bw-access.version>4.0.3</bw-access.version>
+    <bw-access.version>4.0.4-SNAPSHOT</bw-access.version>
     <bw-util.version>4.0.20-SNAPSHOT</bw-util.version>
+    <bw-util-logging.version>4.0.0-SNAPSHOT</bw-util-logging.version>
 
 		<!-- Third Party Library Versions -->
 		<commons-codec.version>1.5</commons-codec.version>
@@ -24,6 +25,8 @@
     <jackson.version>2.9.6</jackson.version>
 		<junit.version>4.8.2</junit.version>
     <servlet-api.version>2.5</servlet-api.version>
+
+    <log4j.version>1.2.15</log4j.version>
 	</properties>
 
   <organization>
@@ -83,6 +86,12 @@
 		<!-- Bedework Dependencies -->
     <dependency>
       <groupId>org.bedework</groupId>
+      <artifactId>bw-access</artifactId>
+      <version>${bw-access.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bedework</groupId>
       <artifactId>bw-util-args</artifactId>
       <version>${bw-util.version}</version>
     </dependency>
@@ -109,6 +118,12 @@
       <groupId>org.bedework</groupId>
       <artifactId>bw-util-jolokia</artifactId>
       <version>${bw-util.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bedework</groupId>
+      <artifactId>bw-util-logging</artifactId>
+      <version>${bw-util-logging.version}</version>
     </dependency>
 
     <dependency>
@@ -174,12 +189,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-
-    <dependency>
-      <groupId>org.bedework</groupId>
-      <artifactId>bw-access</artifactId>
-      <version>${bw-access.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>javax.servlet</groupId>
