@@ -133,6 +133,7 @@ public class BwCli extends JolokiaCli {
     String cmd = null;
     String cmdFile = null;
     String jmxUrl = null;
+    boolean logShowLong = false;
     boolean debug = false;
 
     try {
@@ -144,8 +145,13 @@ public class BwCli extends JolokiaCli {
           continue;
         }
 
+        if (pargs.ifMatch("logshowlong")) {
+          logShowLong = true;
+          continue;
+        }
+
         if (pargs.ifMatch("loganalyse")) {
-          new LogAnalysis().process(pargs.next());
+          new LogAnalysis().process(pargs.next(), logShowLong);
           return;  // Always 1 shot
         }
 

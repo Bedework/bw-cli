@@ -28,13 +28,17 @@ public class LogAnalysis {
   long totalRequests;
   long totalForwardedRequests;
   long errorLines;
-  long totalMillis;
   long unterminatedTask;
+  boolean showLong;
+
+  final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
 
   class ReqStart {
     String taskId;
     String context;
     Long millis;
+    String request;
+    String dt;
   }
 
   final Map<String, Integer> ipMap = new HashMap<>();
@@ -43,9 +47,44 @@ public class LogAnalysis {
   final static int numMilliBuckets = 20;
   final static int milliBucketSize = 100;
 
-  final Map<String, long[]> contextMilliBuckets = new HashMap<>();
+  class ContextInfo {
+    String context;
+    long requests;
+    long totalMillis;
+    long[] buckets = new long[numMilliBuckets];
 
-  public boolean process(final String logPathName) {
+    ContextInfo(final String context) {
+      this.context = context;
+    }
+
+    void reqOut(final String ln,
+                final ReqStart rs,
+                final long millis) {
+      requests++;
+      totalMillis += millis;
+
+      int bucket = (int)(millis / milliBucketSize);
+
+      if (bucket >= (numMilliBuckets - 1)) {
+        bucket = numMilliBuckets - 1;
+        if (showLong) {
+          final String dt = ln.substring(0, ln.indexOf(" INFO"));
+
+          out("Long request %s %d: %s - %s %s",
+              rs.taskId, millis, rs.dt, dt, rs.request);
+        }
+      }
+
+      buckets[bucket]++;
+    }
+  }
+
+  final Map<String, ContextInfo> contexts = new HashMap<>();
+
+  public boolean process(final String logPathName,
+                         final boolean showLong) {
+    this.showLong = showLong;
+
     try {
       final Path logPath = Paths.get(logPathName);
 
@@ -63,18 +102,21 @@ public class LogAnalysis {
         final Long millis = millis(s);
         final String taskId = taskId(s);
 
-        final String context = tryRequestLine(s);
+        if (infoLine(s) && s.contains(wildflyStart)) {
+          // Wildfly restarted
+          tasks.clear();
+          continue;
+        }
 
-        if (context != null) {
+        final ReqStart rs = tryRequestLine(s);
+
+        if (rs != null) {
           if (taskId == null)  {
             continue;
           }
 
-          final ReqStart rs = new ReqStart();
-
           rs.taskId = taskId;
           rs.millis = millis;
-          rs.context = context;
 
           final ReqStart mapRs = tasks.get(taskId);
 
@@ -93,97 +135,36 @@ public class LogAnalysis {
           continue;
         }
 
-        if (isPostTransform(s)) {
-          final ReqStart rs = tasks.get(taskId);
+        if (isRequestOut(s)) {
+          final ReqStart mapRs = tasks.get(taskId);
 
-          if (rs == null) {
+          if (mapRs == null) {
+            final String dt = s.substring(0, s.indexOf(" INFO"));
+
+            out("Missing taskid %s %s",
+                taskId, dt);
             continue;
           }
 
-          if (rs.millis == null) {
+          if (mapRs.millis == null) {
             tasks.remove(taskId);
             continue;
           }
 
-          final long reqMillis = millis - rs.millis;
+          final long reqMillis = millis - mapRs.millis;
 
-          totalMillis += reqMillis;
-          final int bucket = Math.min(numMilliBuckets - 1,
-                                      (int)(reqMillis / milliBucketSize));
+          ContextInfo ci =
+                  contexts.computeIfAbsent(mapRs.context,
+                                           k -> new ContextInfo(mapRs.context));
 
-          long[] milliBuckets =
-                  contextMilliBuckets
-                          .computeIfAbsent(rs.context,
-                                           k -> new long[numMilliBuckets]);
+          ci.reqOut(s, mapRs, reqMillis);
 
-          milliBuckets[bucket]++;
+          // Done with the entry
+          tasks.remove(taskId);
         }
       }
 
-      System.out.println("Total requests: " + totalRequests);
-      if (totalForwardedRequests != totalRequests) {
-        System.out.println(
-                "Total forwarded requests: " + totalForwardedRequests);
-      }
-
-      System.out.println("Total millis: " + totalMillis);
-      System.out.println("Avg millis per request: " + totalMillis / totalRequests);
-
-      System.out.println("Millis per request by context per 100 millis");
-
-      final Set<String> contexts = new TreeSet<>(contextMilliBuckets.keySet());
-
-      final String pattern = "%15s";
-
-      final StringBuilder sb = new StringBuilder(String.format(pattern, ""));
-
-      sb.append(" \tTotal");
-
-      for (int i = 0; i < numMilliBuckets; i++) {
-        sb.append(" \t");
-        sb.append("<");
-        sb.append((i + 1) * 100);
-      }
-      System.out.println(sb.toString());
-
-      for (final String context: contexts) {
-        long[] milliBuckets = contextMilliBuckets.get(context);
-
-        final StringBuilder l =
-                new StringBuilder(String.format(pattern, context));
-
-        long total = 0;
-        for (int i = 0; i < numMilliBuckets; i++) {
-          total += milliBuckets[i];
-        }
-
-        l.append(" \t");
-        l.append(total);
-
-        for (int i = 0; i < numMilliBuckets; i++) {
-          l.append(" \t");
-          l.append(milliBuckets[i]);
-        }
-
-        System.out.println(l.toString());
-      }
-      System.out.println();
-
-      System.out.println("Total error lines: " + errorLines);
-
-      System.out.println();
-
-      final List<Map.Entry<String, Integer>> sorted =
-              sortMap(ipMap);
-      int ct = 0;
-      for (Map.Entry<String, Integer> ent: sorted) {
-        System.out.println(ent.getKey() + "\t" + ent.getValue());
-        ct++;
-
-        if (ct > 20) {
-          break;
-        }
-      }
+      results();
 
       return true;
     } catch (final Throwable t) {
@@ -192,16 +173,18 @@ public class LogAnalysis {
     }
   }
 
-  private String tryRequestLine(final String ln) throws Throwable {
-    if (ln.indexOf(" INFO ") != 23) {
+  private ReqStart tryRequestLine(final String ln) throws Throwable {
+    if (!infoLine(ln)) {
       return null;
     }
 
-    final int reqPos = ln.indexOf(" REQUEST:");
-
-    if (reqPos < 0) {
+    if (!ln.contains(" REQUEST:")) {
       return null;
     }
+
+    final ReqStart rs = new ReqStart();
+
+    rs.dt = ln.substring(0, ln.indexOf(" INFO"));
 
     totalRequests++;
 
@@ -227,6 +210,8 @@ public class LogAnalysis {
       }
     }
 
+    final int reqPos = urlPos;
+
     urlPos += 9;
     urlPos = ln.indexOf("/", urlPos);
     if (urlPos < 0) {
@@ -240,20 +225,33 @@ public class LogAnalysis {
       return null;
     }
 
-    try {
-      final String context = ln.substring(urlPos, endContextPos);
+    final int endReqPos = ln.indexOf(" - ");
 
-      return context;
+    try {
+      rs.context = ln.substring(urlPos, endContextPos);
+      rs.request = ln.substring(reqPos, endReqPos);
+
+      return rs;
     } catch (final Throwable t) {
-      System.out.println(ln);
-      System.out.println(" " + urlPos + ": " + endContextPos);
+      out("%s", ln);
+      out("%s: %s: %s: %s ",
+          urlPos, endContextPos,
+          reqPos, endReqPos);
 
       throw t;
     }
   }
 
+  private void out(final String format, Object... args) {
+    System.out.println(String.format(format, args));
+  }
+
+  private void out() {
+    System.out.println();
+  }
+
   private String taskId(final String ln) throws Throwable {
-    if (ln.indexOf(" INFO ") != 23) {
+    if (!infoLine(ln)) {
       return null;
     }
 
@@ -268,15 +266,27 @@ public class LogAnalysis {
       return null;
     }
 
-    return ln.substring(taskIdPos, endTaskIdPos);
+    return ln.substring(taskIdPos, endTaskIdPos + 1);
   }
 
   private boolean isPostTransform(final String ln) throws Throwable {
-    if (ln.indexOf(" INFO ") != 23) {
+    if (!infoLine(ln)) {
       return false;
     }
 
-    return ln.indexOf(") POSTTRANSFORM:") > 0;
+    return ln.indexOf(" POSTTRANSFORM:") > 0;
+  }
+
+  private boolean isRequestOut(final String ln) throws Throwable {
+    if (!infoLine(ln)) {
+      return false;
+    }
+
+    return ln.indexOf(" REQUEST-OUT:") > 0;
+  }
+
+  private boolean infoLine(final String ln) throws Throwable {
+    return ln.indexOf(" INFO ") == 23;
   }
 
   private boolean tryErrorLine(final String ln) throws Throwable {
@@ -317,4 +327,82 @@ public class LogAnalysis {
     }
   }
 
+  private void results() {
+    out("Total requests: %d", totalRequests);
+    if (totalForwardedRequests != totalRequests) {
+      out("Total forwarded requests: %d", totalForwardedRequests);
+    }
+
+    out("Millis per request by context per 100 millis");
+
+    final Set<String> contextNames = new TreeSet<>(contexts.keySet());
+
+    final String pattern = "%15s";
+
+    final StringBuilder sb =
+            new StringBuilder(String.format(pattern, ""));
+
+    sb.append(" \tTotal \tAvg ms");
+
+    for (int i = 0; i < numMilliBuckets; i++) {
+      sb.append(" \t");
+      sb.append("<");
+      sb.append((i + 1) * 100);
+    }
+
+    out("%s", sb);
+
+    for (final String context: contextNames) {
+      final ContextInfo ci = contexts.get(context);
+
+      final StringBuilder l =
+              new StringBuilder(String.format(pattern, context));
+
+      l.append(" \t");
+      l.append(ci.requests);
+      l.append(" \t");
+      l.append((int)(ci.totalMillis / ci.requests));
+
+      final StringBuilder percents =
+              new StringBuilder(String.format(pattern, ""));
+
+      percents.append(" \t \t");
+
+      long rTotalReq = 0;
+
+      for (int i = 0; i < numMilliBuckets; i++) {
+        l.append(" \t");
+        l.append(ci.buckets[i]);
+
+        rTotalReq += ci.buckets[i];
+        percents.append(" \t");
+        percents.append((int)(100 * rTotalReq / ci.requests));
+        percents.append("%");
+      }
+
+      out("%s", l);
+      out("%s", percents);
+    }
+
+    out();
+
+    out("Total error lines: %d", errorLines);
+
+    out();
+
+    final int numIps = 20;
+    out("List of top %d ips", numIps);
+
+    final List<Map.Entry<String, Integer>> sorted =
+            sortMap(ipMap);
+    int ct = 0;
+    for (Map.Entry<String, Integer> ent: sorted) {
+      out("%s\t%d", ent.getKey(), ent.getValue());
+      ct++;
+
+      if (ct > numIps) {
+        break;
+      }
+    }
+  }
 }
