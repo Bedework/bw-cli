@@ -238,10 +238,13 @@ public class BwCli extends JolokiaCli {
 
     System.err.println();
     System.err.println("Optional arguments:");
-    System.err.println("   url <url>         Url of the jolokia jmx service");
+    System.err.println("   url <url>          Url of the jolokia jmx service");
     System.err.println("   -cmds <qstring>    A path to a file of commands");
     System.err.println("   -cmd  <qstring>    A single quoted command to execute");
-    System.err.println("   debug             To enable debug traces");
+    System.err.println("   debug              To enable debug traces");
+    System.err.println("   logshowlong        To enable display of long requests" +
+                       "                      in loganalyse");
+    System.err.println("   loganalyse <path>  Calculate and display information" +
+                       "                      from referenced log file");
   }
-
 }
