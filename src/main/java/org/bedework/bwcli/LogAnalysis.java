@@ -188,14 +188,35 @@ public class LogAnalysis {
 
     totalRequests++;
 
+    String ip = null;
+
+    final int charsetPos = ln.indexOf(":charset=");
+    if (charsetPos > 0) {
+      // Use to locate ip
+      final int nextColonPos = ln.indexOf(":", charsetPos + 1);
+      if (nextColonPos > 0) {
+        // Unfortunately ipv6 addresses have a ":" separator
+        final int endColonPos = ln.indexOf(":http", nextColonPos + 1);
+        if (endColonPos > 0) {
+          ip = ln.substring(nextColonPos + 1, endColonPos);
+        }
+      }
+    }
+
     final int xffPos = ln.indexOf(" X-Forwarded-For:");
 
     if (xffPos > 0) {
       totalForwardedRequests++;
 
       // I think it's always the last field
-      final String ip = ln.substring(xffPos + 17);
+      final String xff = ln.substring(xffPos + 17);
 
+      if (!xff.equals("NONE")) {
+        ip = xff;
+      }
+    }
+
+    if (ip != null) {
       Integer ct = ipMap.computeIfAbsent(ip, k -> 0);
 
       ct = ct + 1;
