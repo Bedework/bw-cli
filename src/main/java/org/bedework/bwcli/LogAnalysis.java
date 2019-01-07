@@ -99,68 +99,8 @@ public class LogAnalysis {
           break;
         }
 
-        final Long millis = millis(s);
-        final String taskId = taskId(s);
-
-        if (infoLine(s) && s.contains(wildflyStart)) {
-          // Wildfly restarted
-          tasks.clear();
-          continue;
-        }
-
-        final ReqStart rs = tryRequestLine(s);
-
-        if (rs != null) {
-          if (taskId == null)  {
-            continue;
-          }
-
-          rs.taskId = taskId;
-          rs.millis = millis;
-
-          final ReqStart mapRs = tasks.get(taskId);
-
-          if (mapRs != null) {
-            // No posttransform message
-            unterminatedTask++;
-            continue;
-          }
-
-          tasks.put(taskId, rs);
-
-          continue;
-        }
-
-        if (tryErrorLine(s)) {
-          continue;
-        }
-
-        if (isRequestOut(s)) {
-          final ReqStart mapRs = tasks.get(taskId);
-
-          if (mapRs == null) {
-            final String dt = s.substring(0, s.indexOf(" INFO"));
-
-            out("Missing taskid %s %s",
-                taskId, dt);
-            continue;
-          }
-
-          if (mapRs.millis == null) {
-            tasks.remove(taskId);
-            continue;
-          }
-
-          final long reqMillis = millis - mapRs.millis;
-
-          ContextInfo ci =
-                  contexts.computeIfAbsent(mapRs.context,
-                                           k -> new ContextInfo(mapRs.context));
-
-          ci.reqOut(s, mapRs, reqMillis);
-
-          // Done with the entry
-          tasks.remove(taskId);
+        if (infoLine(s)) {
+          doInfo(s);
         }
       }
 
@@ -173,11 +113,73 @@ public class LogAnalysis {
     }
   }
 
-  private ReqStart tryRequestLine(final String ln) throws Throwable {
-    if (!infoLine(ln)) {
-      return null;
+  private void doInfo(final String s) throws Throwable {
+    final Long millis = millis(s);
+    final String taskId = taskId(s);
+
+    if (s.contains(wildflyStart)) {
+      // Wildfly restarted
+      tasks.clear();
+      return;
     }
 
+    final ReqStart rs = tryRequestLine(s);
+
+    if (rs != null) {
+      if (taskId == null)  {
+        return;
+      }
+
+      rs.taskId = taskId;
+      rs.millis = millis;
+
+      final ReqStart mapRs = tasks.get(taskId);
+
+      if (mapRs != null) {
+        // No posttransform message
+        unterminatedTask++;
+        return;
+      }
+
+      tasks.put(taskId, rs);
+
+      return;
+    }
+
+    if (tryErrorLine(s)) {
+      return;
+    }
+
+    if (isRequestOut(s)) {
+      final ReqStart mapRs = tasks.get(taskId);
+
+      if (mapRs == null) {
+        final String dt = s.substring(0, s.indexOf(" INFO"));
+
+        out("Missing taskid %s %s",
+            taskId, dt);
+        return;
+      }
+
+      if (mapRs.millis == null) {
+        tasks.remove(taskId);
+        return;
+      }
+
+      final long reqMillis = millis - mapRs.millis;
+
+      ContextInfo ci =
+              contexts.computeIfAbsent(mapRs.context,
+                                       k -> new ContextInfo(mapRs.context));
+
+      ci.reqOut(s, mapRs, reqMillis);
+
+      // Done with the entry
+      tasks.remove(taskId);
+    }
+  }
+
+  private ReqStart tryRequestLine(final String ln) throws Throwable {
     if (!ln.contains(" REQUEST:")) {
       return null;
     }
@@ -263,19 +265,7 @@ public class LogAnalysis {
     }
   }
 
-  private void out(final String format, Object... args) {
-    System.out.println(String.format(format, args));
-  }
-
-  private void out() {
-    System.out.println();
-  }
-
   private String taskId(final String ln) throws Throwable {
-    if (!infoLine(ln)) {
-      return null;
-    }
-
     final int taskIdPos = ln.indexOf("] (default");
     if (taskIdPos < 0) {
       return null;
@@ -290,19 +280,7 @@ public class LogAnalysis {
     return ln.substring(taskIdPos, endTaskIdPos + 1);
   }
 
-  private boolean isPostTransform(final String ln) throws Throwable {
-    if (!infoLine(ln)) {
-      return false;
-    }
-
-    return ln.indexOf(" POSTTRANSFORM:") > 0;
-  }
-
   private boolean isRequestOut(final String ln) throws Throwable {
-    if (!infoLine(ln)) {
-      return false;
-    }
-
     return ln.indexOf(" REQUEST-OUT:") > 0;
   }
 
@@ -318,18 +296,6 @@ public class LogAnalysis {
     errorLines++;
 
     return true;
-  }
-
-  public <K, V extends Comparable> List<Map.Entry<K, V>> sortMap(Map<K, V> map) {
-    // We create a list from the elements of the unsorted map
-    List <Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
-
-    // Now sort the list
-    Comparator<Map.Entry<K, V>> comparator =
-            Comparator.comparing(Map.Entry<K, V>::getValue);
-    list.sort(comparator.reversed());
-
-    return list;
   }
 
   public Long millis(final String ln) {
@@ -425,5 +391,25 @@ public class LogAnalysis {
         break;
       }
     }
+  }
+
+  private <K, V extends Comparable> List<Map.Entry<K, V>> sortMap(Map<K, V> map) {
+    // We create a list from the elements of the unsorted map
+    List <Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+
+    // Now sort the list
+    Comparator<Map.Entry<K, V>> comparator =
+            Comparator.comparing(Map.Entry<K, V>::getValue);
+    list.sort(comparator.reversed());
+
+    return list;
+  }
+
+  private void out(final String format, Object... args) {
+    System.out.println(String.format(format, args));
+  }
+
+  private void out() {
+    System.out.println();
   }
 }
