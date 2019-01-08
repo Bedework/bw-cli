@@ -52,6 +52,7 @@ public class LogAnalysis {
     long requests;
     long totalMillis;
     long[] buckets = new long[numMilliBuckets];
+    long rTotalReq; // Used for output
 
     ContextInfo(final String context) {
       this.context = context;
@@ -101,7 +102,10 @@ public class LogAnalysis {
 
         if (infoLine(s)) {
           doInfo(s);
+          continue;
         }
+
+        tryErrorLine(s);
       }
 
       results();
@@ -123,10 +127,15 @@ public class LogAnalysis {
       return;
     }
 
+    //if (s.startsWith("2019-01-08 09:00:44,209")) {
+    //  out("the line");
+    //}
+
     final ReqStart rs = tryRequestLine(s);
 
     if (rs != null) {
       if (taskId == null)  {
+        out("No taskid %s", s);
         return;
       }
 
@@ -136,17 +145,12 @@ public class LogAnalysis {
       final ReqStart mapRs = tasks.get(taskId);
 
       if (mapRs != null) {
-        // No posttransform message
+        // No request-out message
         unterminatedTask++;
-        return;
       }
 
       tasks.put(taskId, rs);
 
-      return;
-    }
-
-    if (tryErrorLine(s)) {
       return;
     }
 
@@ -191,6 +195,7 @@ public class LogAnalysis {
     totalRequests++;
 
     String ip = null;
+    int endIp = -1;
 
     final int charsetPos = ln.indexOf(":charset=");
     if (charsetPos > 0) {
@@ -198,11 +203,15 @@ public class LogAnalysis {
       final int nextColonPos = ln.indexOf(":", charsetPos + 1);
       if (nextColonPos > 0) {
         // Unfortunately ipv6 addresses have a ":" separator
-        final int endColonPos = ln.indexOf(":http", nextColonPos + 1);
-        if (endColonPos > 0) {
-          ip = ln.substring(nextColonPos + 1, endColonPos);
+        endIp = ln.indexOf(":http", nextColonPos + 1);
+        if (endIp > 0) {
+          ip = ln.substring(nextColonPos + 1, endIp);
         }
       }
+    }
+
+    if (endIp < 0) {
+      return null;
     }
 
     final int xffPos = ln.indexOf(" X-Forwarded-For:");
@@ -225,17 +234,10 @@ public class LogAnalysis {
       ipMap.put(ip, ct);
     }
 
-    int urlPos = ln.indexOf("https://");
-    if (urlPos < 0) {
-      urlPos = ln.indexOf("http://");
-      if (urlPos < 0) {
-        return null;
-      }
-    }
+    int urlPos = endIp + 10; // safely past the "//"
 
     final int reqPos = urlPos;
 
-    urlPos += 9;
     urlPos = ln.indexOf("/", urlPos);
     if (urlPos < 0) {
       return null;
@@ -248,7 +250,7 @@ public class LogAnalysis {
       return null;
     }
 
-    final int endReqPos = ln.indexOf(" - ");
+    final int endReqPos = ln.indexOf(" - ", endContextPos);
 
     try {
       rs.context = ln.substring(urlPos, endContextPos);
@@ -324,53 +326,68 @@ public class LogAnalysis {
 
     final Set<String> contextNames = new TreeSet<>(contexts.keySet());
 
-    final String pattern = "%15s";
+    final String labelPattern = " %6s |";
 
-    final StringBuilder sb =
-            new StringBuilder(String.format(pattern, ""));
+    final ContextInfo[] cis = new ContextInfo[contextNames.size()];
+    final String[] cellFormats = new String[contextNames.size()];
+    final String[] hdrFormats = new String[contextNames.size()];
+    int cx = 0;
 
-    sb.append(" \tTotal \tAvg ms");
-
-    for (int i = 0; i < numMilliBuckets; i++) {
-      sb.append(" \t");
-      sb.append("<");
-      sb.append((i + 1) * 100);
-    }
-
-    out("%s", sb);
+    final StringBuilder header =
+            new StringBuilder(String.format(labelPattern, ""));
 
     for (final String context: contextNames) {
       final ContextInfo ci = contexts.get(context);
+      cis[cx] = ci;
 
+      final int fldLen = Math.max(context.length(), 5);
+      cellFormats[cx] = " %" + fldLen + "s - %3s%% |";
+      final String hdrFmt  = "        %" + fldLen + "s |";
+      hdrFormats[cx] = hdrFmt;
+      header.append(String.format(hdrFmt, context));
+      cx++;
+    }
+
+    out("%s", header);
+
+    // Output each bucket for each context
+
+    for (int i = 0; i < numMilliBuckets; i++) {
       final StringBuilder l =
-              new StringBuilder(String.format(pattern, context));
+              new StringBuilder(String.format(labelPattern, "<" + ((i + 1) * 100)));
 
-      l.append(" \t");
-      l.append(ci.requests);
-      l.append(" \t");
-      l.append((int)(ci.totalMillis / ci.requests));
+      for (int j = 0; j < cis.length; j++) {
+        final ContextInfo ci = cis[j];
+        // bucket and percent
 
-      final StringBuilder percents =
-              new StringBuilder(String.format(pattern, ""));
+        l.append(String.format(cellFormats[j],
+                 ci.buckets[i],
+                 ((int)(100 * ci.rTotalReq / ci.requests))));
 
-      percents.append(" \t \t");
-
-      long rTotalReq = 0;
-
-      for (int i = 0; i < numMilliBuckets; i++) {
-        l.append(" \t");
-        l.append(ci.buckets[i]);
-
-        rTotalReq += ci.buckets[i];
-        percents.append(" \t");
-        percents.append((int)(100 * rTotalReq / ci.requests));
-        percents.append("%");
+        ci.rTotalReq += ci.buckets[i];
       }
 
       out("%s", l);
-      out("%s", percents);
     }
 
+    // Total lines
+
+    final StringBuilder totReq =
+            new StringBuilder(String.format(labelPattern, "Total"));
+    final StringBuilder avgMs =
+            new StringBuilder(String.format(labelPattern, "Avg ms"));
+
+    for (int j = 0; j < cis.length; j++) {
+      final ContextInfo ci = cis[j];
+
+      totReq.append(String.format(hdrFormats[j],
+                                  ci.requests));
+      avgMs.append(String.format(hdrFormats[j],
+                                 (int)(ci.totalMillis / ci.requests)));
+    }
+
+    out("%s", totReq);
+    out("%s", avgMs);
     out();
 
     out("Total error lines: %d", errorLines);
