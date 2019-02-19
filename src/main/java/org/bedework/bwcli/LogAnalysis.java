@@ -30,6 +30,7 @@ public class LogAnalysis {
   long errorLines;
   long unterminatedTask;
   boolean showLong;
+  boolean showMissingTaskIds;
 
   final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
 
@@ -51,6 +52,11 @@ public class LogAnalysis {
     String context;
     long requests;
     long totalMillis;
+
+    // Total ignoring the highest bucket
+    long subTrequests;
+    long subTtotalMillis;
+
     long[] buckets = new long[numMilliBuckets];
     long rTotalReq; // Used for output
 
@@ -77,14 +83,21 @@ public class LogAnalysis {
       }
 
       buckets[bucket]++;
+
+      if (bucket < (numMilliBuckets - 1)) {
+        subTrequests++;
+        subTtotalMillis += millis;
+      }
     }
   }
 
   final Map<String, ContextInfo> contexts = new HashMap<>();
 
   public boolean process(final String logPathName,
-                         final boolean showLong) {
+                         final boolean showLong,
+                         final boolean showMissingTaskIds) {
     this.showLong = showLong;
+    this.showMissingTaskIds = showMissingTaskIds;
 
     try {
       final Path logPath = Paths.get(logPathName);
@@ -158,11 +171,18 @@ public class LogAnalysis {
       final ReqStart mapRs = tasks.get(taskId);
 
       if (mapRs == null) {
-        final String dt = s.substring(0, s.indexOf(" INFO"));
+        if (showMissingTaskIds) {
+          final String dt = s.substring(0, s.indexOf(" INFO"));
 
-        out("Missing taskid %s %s",
-            taskId, dt);
+          out("Missing taskid %s %s",
+              taskId, dt);
+        }
+
         return;
+      }
+
+      if (mapRs.context.trim().length() == 0) {
+        out("No context for %s %s", mapRs.dt, mapRs.request);
       }
 
       if (mapRs.millis == null) {
@@ -377,6 +397,11 @@ public class LogAnalysis {
     final StringBuilder avgMs =
             new StringBuilder(String.format(labelPattern, "Avg ms"));
 
+    final StringBuilder subTtotReq =
+            new StringBuilder(String.format(labelPattern, "Total"));
+    final StringBuilder subTavgMs =
+            new StringBuilder(String.format(labelPattern, "Avg ms"));
+
     for (int j = 0; j < cis.length; j++) {
       final ContextInfo ci = cis[j];
 
@@ -384,10 +409,18 @@ public class LogAnalysis {
                                   ci.requests));
       avgMs.append(String.format(hdrFormats[j],
                                  (int)(ci.totalMillis / ci.requests)));
+
+      subTtotReq.append(String.format(hdrFormats[j],
+                                      ci.subTrequests));
+      subTavgMs.append(String.format(hdrFormats[j],
+                                     (int)(ci.subTtotalMillis / ci.subTrequests)));
     }
 
     out("%s", totReq);
     out("%s", avgMs);
+    out("%s", "Figures ignoring highest bucket:");
+    out("%s", subTtotReq);
+    out("%s", subTavgMs);
     out();
 
     out("Total error lines: %d", errorLines);
