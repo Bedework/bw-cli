@@ -183,6 +183,8 @@ public class LogAnalysis {
 
       if (mapRs.context.trim().length() == 0) {
         out("No context for %s %s", mapRs.dt, mapRs.request);
+
+        return;
       }
 
       if (mapRs.millis == null) {
