@@ -22,6 +22,10 @@ import java.util.TreeSet;
  * 2019-01-04 00:00:11,742 INFO  [org.bedework.webcommon.search.RenderSearchResultAction] (default task-27) REQUEST:rFtrI_S0o_P8sp0fa9cm7ZvR9a5aK6NkZ1Ml8oSF:unknown:charset=UTF-8:10.0.250.197:http://calendar.yale.edu/cal/main/showMainEventList.rdo - Referer:http://calendar.yale.edu/cal/main/showEventList.rdo;jsessionid=rFtrI_S0o_P8sp0fa9cm7ZvR9a5aK6NkZ1Ml8oSF.ip-10-0-10-5 - X-Forwarded-For:117.222.245.27
  * </pre>
  *
+ * <p>or this one
+ *
+ * <pre>2019-03-15 15:20:22,912 INFO  [org.bedework.webcommon.BwCallbackImpl] (default task-4) REQUEST-OUT:MYISJK5RJkg3NkoW6XKCJpfG_R6v106z83Xg9Nnz:bwclientcb:charset=UTF-8:10.0.250.197:http://calendar.yale.edu/cal/event/eventView.do;jsessionid=yb4n2K2XFwM1yJV0RCt0k2FHUx2EQP0uEVAt7Nlk.ip-10-0-10-189?b=de&href=%2Fpublic%2Fcals%2FMainCal%2FCAL-ff808081-6831cab0-0168-33304e60-00003754.ics - Referer:NONE - X-Forwarded-For:54.70.40.11</pre>
+ *
  * User: mike Date: 1/4/19 Time: 22:43
  */
 public class LogAnalysis {
@@ -34,16 +38,229 @@ public class LogAnalysis {
 
   final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
 
-  class ReqStart {
-    String taskId;
-    String context;
+  // base for REQUEST and REQUEST-OUT
+  class LogEntry {
+    String req;
+    int curPos; // while parsing
+
     Long millis;
-    String request;
     String dt;
+    String taskId;
+
+    String logName;
+
+    String sessionId;
+
+    String charset;
+
+    String ip;
+
+    String url;
+
+    String context;
+    String request;
+
+    /**
+     * @param req log entry
+     * @return position we reached or null for bad record
+     */
+    Integer parse(final String req,
+                  final String logName) {
+      this.req = req;
+      this.logName = logName;
+      dt = req.substring(0, req.indexOf(" INFO"));
+      millis = millis();
+      if (millis == null) {
+        error("Unable to get millis for %s", req);
+        return null;
+      }
+
+      taskId = taskId(req);
+
+      curPos = req.indexOf(logName + ":");
+
+      if (curPos < 0) {
+        error("No name found for %s", req);
+        return null;
+      }
+
+      if (!logName.equals(field())) {
+        error("Expected %s for %s", logName, req);
+        return null;
+      }
+
+      sessionId = field();
+      if (sessionId == null) {
+        error("No session end found for %s", req);
+        return null;
+      }
+
+      charset = field();
+      if (charset == null) {
+        error("No charset found for %s", req);
+        return null;
+      }
+
+      return curPos;
+    }
+
+    public Long millis() {
+      try {
+        // 2019-01-04 00:00:11,742 ...
+        // 0123456789012345678901234
+
+        final long hrs = Integer.valueOf(req.substring(11, 13));
+        final long mins = Integer.valueOf(req.substring(14, 16));
+        final long secs = Integer.valueOf(req.substring(17, 19));
+        final long millis = Integer.valueOf(req.substring(20, 23));
+
+        return ((((hrs * 60) + mins) * 60) + secs) * 1000 + millis;
+      } catch (final Throwable ignored) {
+        return null;
+      }
+    }
+
+    // Expect this next
+    String field() {
+      return field("");
+    }
+
+    // Needed because ipv6 addresses have ':'
+    String field(final String nextFieldStart) {
+      final int start = curPos;
+      final int end = req.indexOf(":" + nextFieldStart, start);
+      if (end < 0) {
+        error("No end found for %s", req);
+        return null;
+      }
+
+      final String res = req.substring(start, end);
+      curPos = end + 1; // Skip only the ":"
+
+      return res;
+    }
+  }
+
+  private String taskId(final String ln) {
+    final int taskIdPos = ln.indexOf("] (default");
+    if (taskIdPos < 0) {
+      return null;
+    }
+
+    final int endTaskIdPos = ln.indexOf(")", taskIdPos);
+
+    if (endTaskIdPos < 0) {
+      return null;
+    }
+
+    return ln.substring(taskIdPos, endTaskIdPos + 1);
+  }
+
+  class ReqInOutLogEntry extends LogEntry {
+    String referer;
+    String xForwardedFor;
+
+    Integer parse(final String req,
+                  final String logName) {
+      if (super.parse(req, logName) == null) {
+        return null;
+      }
+
+      ip = field("http");
+      if (ip == null) {
+        error("No ip for %s", req);
+        return null;
+      }
+
+      url = dashField();
+      if (url == null) {
+        error("No url for %s", req);
+        return null;
+      }
+
+      String fname = field();
+      if (!"Referer".equals(fname)) {
+        error("Expected referer for %s", req);
+        return null;
+      }
+
+      referer = dashField();
+
+      fname = field();
+      if (!"X-Forwarded-For".equals(fname)) {
+        error("Expected X-Forwarded-For for %s", req);
+        return null;
+      }
+
+      // I think it's always the last field
+      xForwardedFor = req.substring(curPos);
+
+      if (!xForwardedFor.equals("NONE")) {
+        ip = xForwardedFor;
+      }
+
+      Integer ct = ipMap.computeIfAbsent(ip, k -> 0);
+
+      ct = ct + 1;
+      ipMap.put(ip, ct);
+
+      // Parse out the url
+      int urlPos = 10; // safely past the "//"
+
+      final int reqPos = urlPos;
+
+      urlPos = url.indexOf("/", urlPos);
+      if (urlPos < 0) {
+        // No context
+        return curPos;
+      }
+
+      urlPos++; // past the /
+
+      final int endContextPos = url.indexOf("/", urlPos);
+      if (endContextPos < 0) {
+        return curPos;
+      }
+
+      try {
+        context = url.substring(urlPos, endContextPos);
+        request = url.substring(reqPos);
+
+        if (context.trim().length() == 0) {
+          context = null;
+        }
+      } catch (final Throwable t) {
+        out("%s", req);
+        out("%s: %s: %s ",
+            urlPos, endContextPos,
+            reqPos);
+        return null;
+      }
+
+      return curPos;
+    }
+
+    boolean hasJsessionid() {
+      return (url != null) && url.contains(";jsessionid=");
+    }
+
+    String dashField() {
+      final int start = curPos;
+      final int end = req.indexOf(" - ", start);
+      if (end < 0) {
+        error("No request found for %s", req);
+        return null;
+      }
+
+      final String res = req.substring(start, end);
+      curPos = end + 3;
+
+      return res;
+    }
   }
 
   final Map<String, Integer> ipMap = new HashMap<>();
-  final Map<String, ReqStart> tasks = new HashMap<>();
+  final Map<String, ReqInOutLogEntry> tasks = new HashMap<>();
 
   final static int numMilliBuckets = 20;
   final static int milliBucketSize = 100;
@@ -60,12 +277,15 @@ public class LogAnalysis {
     long[] buckets = new long[numMilliBuckets];
     long rTotalReq; // Used for output
 
+    // How often we see ";jsessionid" in the incoming request
+    long sessions;
+
     ContextInfo(final String context) {
       this.context = context;
     }
 
     void reqOut(final String ln,
-                final ReqStart rs,
+                final ReqInOutLogEntry rs,
                 final long millis) {
       requests++;
       totalMillis += millis;
@@ -131,9 +351,6 @@ public class LogAnalysis {
   }
 
   private void doInfo(final String s) throws Throwable {
-    final Long millis = millis(s);
-    final String taskId = taskId(s);
-
     if (s.contains(wildflyStart)) {
       // Wildfly restarted
       tasks.clear();
@@ -144,55 +361,44 @@ public class LogAnalysis {
     //  out("the line");
     //}
 
-    final ReqStart rs = tryRequestLine(s);
+    ReqInOutLogEntry rs = tryRequestLine(s);
 
     if (rs != null) {
-      if (taskId == null)  {
-        out("No taskid %s", s);
-        return;
-      }
-
-      rs.taskId = taskId;
-      rs.millis = millis;
-
-      final ReqStart mapRs = tasks.get(taskId);
+      final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
 
       if (mapRs != null) {
         // No request-out message
         unterminatedTask++;
       }
 
-      tasks.put(taskId, rs);
+      tasks.put(rs.taskId, rs);
 
       return;
     }
 
-    if (isRequestOut(s)) {
-      final ReqStart mapRs = tasks.get(taskId);
+    rs = tryRequestOut(s);
+
+    if (rs != null) {
+      final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
 
       if (mapRs == null) {
         if (showMissingTaskIds) {
           final String dt = s.substring(0, s.indexOf(" INFO"));
 
           out("Missing taskid %s %s",
-              taskId, dt);
+              rs.taskId, dt);
         }
 
         return;
       }
 
-      if (mapRs.context.trim().length() == 0) {
+      if (mapRs.context == null) {
         out("No context for %s %s", mapRs.dt, mapRs.request);
 
         return;
       }
 
-      if (mapRs.millis == null) {
-        tasks.remove(taskId);
-        return;
-      }
-
-      final long reqMillis = millis - mapRs.millis;
+      final long reqMillis = rs.millis - mapRs.millis;
 
       ContextInfo ci =
               contexts.computeIfAbsent(mapRs.context,
@@ -200,112 +406,36 @@ public class LogAnalysis {
 
       ci.reqOut(s, mapRs, reqMillis);
 
+      if (rs.hasJsessionid()) {
+        ci.sessions++;
+      }
+
       // Done with the entry
-      tasks.remove(taskId);
+      tasks.remove(rs.taskId);
     }
   }
 
-  private ReqStart tryRequestLine(final String ln) throws Throwable {
-    if (!ln.contains(" REQUEST:")) {
-      return null;
-    }
-
-    final ReqStart rs = new ReqStart();
-
-    rs.dt = ln.substring(0, ln.indexOf(" INFO"));
-
-    totalRequests++;
-
-    String ip = null;
-    int endIp = -1;
-
-    final int charsetPos = ln.indexOf(":charset=");
-    if (charsetPos > 0) {
-      // Use to locate ip
-      final int nextColonPos = ln.indexOf(":", charsetPos + 1);
-      if (nextColonPos > 0) {
-        // Unfortunately ipv6 addresses have a ":" separator
-        endIp = ln.indexOf(":http", nextColonPos + 1);
-        if (endIp > 0) {
-          ip = ln.substring(nextColonPos + 1, endIp);
-        }
-      }
-    }
-
-    if (endIp < 0) {
-      return null;
-    }
-
-    final int xffPos = ln.indexOf(" X-Forwarded-For:");
-
-    if (xffPos > 0) {
-      totalForwardedRequests++;
-
-      // I think it's always the last field
-      final String xff = ln.substring(xffPos + 17);
-
-      if (!xff.equals("NONE")) {
-        ip = xff;
-      }
-    }
-
-    if (ip != null) {
-      Integer ct = ipMap.computeIfAbsent(ip, k -> 0);
-
-      ct = ct + 1;
-      ipMap.put(ip, ct);
-    }
-
-    int urlPos = endIp + 10; // safely past the "//"
-
-    final int reqPos = urlPos;
-
-    urlPos = ln.indexOf("/", urlPos);
-    if (urlPos < 0) {
-      return null;
-    }
-
-    urlPos++; // past the /
-
-    final int endContextPos = ln.indexOf("/", urlPos);
-    if (endContextPos < 0) {
-      return null;
-    }
-
-    final int endReqPos = ln.indexOf(" - ", endContextPos);
-
-    try {
-      rs.context = ln.substring(urlPos, endContextPos);
-      rs.request = ln.substring(reqPos, endReqPos);
-
-      return rs;
-    } catch (final Throwable t) {
-      out("%s", ln);
-      out("%s: %s: %s: %s ",
-          urlPos, endContextPos,
-          reqPos, endReqPos);
-
-      throw t;
-    }
+  private ReqInOutLogEntry tryRequestLine(final String ln) throws Throwable {
+    return tryRequestInOutLine(ln, "REQUEST");
   }
 
-  private String taskId(final String ln) throws Throwable {
-    final int taskIdPos = ln.indexOf("] (default");
-    if (taskIdPos < 0) {
-      return null;
-    }
-
-    final int endTaskIdPos = ln.indexOf(")", taskIdPos);
-
-    if (endTaskIdPos < 0) {
-      return null;
-    }
-
-    return ln.substring(taskIdPos, endTaskIdPos + 1);
+  private ReqInOutLogEntry tryRequestOut(final String ln) throws Throwable {
+    return tryRequestInOutLine(ln, "REQUEST-OUT");
   }
 
-  private boolean isRequestOut(final String ln) throws Throwable {
-    return ln.indexOf(" REQUEST-OUT:") > 0;
+  private ReqInOutLogEntry tryRequestInOutLine(final String ln,
+                                               final String reqName) throws Throwable {
+    if (!ln.contains(" " + reqName + ":")) {
+      return null;
+    }
+
+    final ReqInOutLogEntry rs = new ReqInOutLogEntry();
+
+    if (rs.parse(ln, reqName) < 0) {
+      return null;
+    }
+
+    return rs;
   }
 
   private boolean infoLine(final String ln) throws Throwable {
@@ -320,22 +450,6 @@ public class LogAnalysis {
     errorLines++;
 
     return true;
-  }
-
-  public Long millis(final String ln) {
-    try {
-      // 2019-01-04 00:00:11,742 ...
-      // 0123456789012345678901234
-
-      final long hrs = Integer.valueOf(ln.substring(11, 13));
-      final long mins = Integer.valueOf(ln.substring(14, 16));
-      final long secs = Integer.valueOf(ln.substring(17, 19));
-      final long millis = Integer.valueOf(ln.substring(20, 23));
-
-      return ((((hrs * 60) + mins) * 60) + secs) * 1000 + millis;
-    } catch (final Throwable ignored) {
-      return null;
-    }
   }
 
   private void results() {
@@ -394,6 +508,8 @@ public class LogAnalysis {
 
     // Total lines
 
+    final StringBuilder sessReq =
+            new StringBuilder(String.format(labelPattern, "Sess"));
     final StringBuilder totReq =
             new StringBuilder(String.format(labelPattern, "Total"));
     final StringBuilder avgMs =
@@ -407,6 +523,8 @@ public class LogAnalysis {
     for (int j = 0; j < cis.length; j++) {
       final ContextInfo ci = cis[j];
 
+      sessReq.append(String.format(hdrFormats[j],
+                                  ci.sessions));
       totReq.append(String.format(hdrFormats[j],
                                   ci.requests));
       avgMs.append(String.format(hdrFormats[j],
@@ -418,6 +536,7 @@ public class LogAnalysis {
                                      (int)(ci.subTtotalMillis / ci.subTrequests)));
     }
 
+    out("%s", sessReq);
     out("%s", totReq);
     out("%s", avgMs);
     out("%s", "Figures ignoring highest bucket:");
@@ -458,6 +577,10 @@ public class LogAnalysis {
   }
 
   private void out(final String format, Object... args) {
+    System.out.println(String.format(format, args));
+  }
+
+  private void error(final String format, Object... args) {
     System.out.println(String.format(format, args));
   }
 
