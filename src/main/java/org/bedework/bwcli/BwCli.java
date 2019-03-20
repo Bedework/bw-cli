@@ -162,6 +162,11 @@ public class BwCli extends JolokiaCli {
           return;  // Always 1 shot
         }
 
+        if (pargs.ifMatch("legacyfeeds")) {
+          new AccessLogs().legacyFeeds(pargs.next());
+          return;  // Always 1 shot
+        }
+
         if (pargs.ifMatch("url")) {
           url = pargs.next();
           continue;
