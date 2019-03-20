@@ -260,6 +260,7 @@ public class LogAnalysis {
   }
 
   final Map<String, Integer> ipMap = new HashMap<>();
+  final Map<String, Integer> longreqIpMap = new HashMap<>();
   final Map<String, ReqInOutLogEntry> tasks = new HashMap<>();
 
   final static int numMilliBuckets = 20;
@@ -300,6 +301,11 @@ public class LogAnalysis {
           out("Long request %s %s %d: %s - %s %s",
               rs.ip, rs.taskId, millis, rs.dt, dt, rs.request);
         }
+
+        Integer ct = longreqIpMap.computeIfAbsent(rs.ip, k -> 0);
+
+        ct = ct + 1;
+        longreqIpMap.put(rs.ip, ct);
       }
 
       buckets[bucket]++;
@@ -555,6 +561,22 @@ public class LogAnalysis {
             sortMap(ipMap);
     int ct = 0;
     for (Map.Entry<String, Integer> ent: sorted) {
+      out("%s\t%d", ent.getKey(), ent.getValue());
+      ct++;
+
+      if (ct > numIps) {
+        break;
+      }
+    }
+
+    out();
+
+    out("List of top %d long request ips", numIps);
+
+    final List<Map.Entry<String, Integer>> longSorted =
+            sortMap(longreqIpMap);
+    ct = 0;
+    for (Map.Entry<String, Integer> ent: longSorted) {
       out("%s\t%d", ent.getKey(), ent.getValue());
       ct++;
 
