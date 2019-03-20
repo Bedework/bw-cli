@@ -297,8 +297,8 @@ public class LogAnalysis {
         if (showLong) {
           final String dt = ln.substring(0, ln.indexOf(" INFO"));
 
-          out("Long request %s %d: %s - %s %s",
-              rs.taskId, millis, rs.dt, dt, rs.request);
+          out("Long request %s %s %d: %s - %s %s",
+              rs.ip, rs.taskId, millis, rs.dt, dt, rs.request);
         }
       }
 
