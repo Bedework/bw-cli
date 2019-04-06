@@ -24,7 +24,7 @@
    <!-- A time/date based rolling appender -->
    <appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
       <errorHandler class="org.apache.log4j.helpers.OnlyOnceErrorHandler"/>
-      <param name="File" value="~/logs/profileService.log"/>
+      <param name="File" value="~/logs/bwcli.log"/>
       <param name="Append" value="true"/>
 
       <!-- Rollover at midnight each day -->
