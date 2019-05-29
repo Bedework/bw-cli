@@ -51,6 +51,8 @@ public class LogAnalysis {
 
     String sessionId;
 
+    String logPrefix;
+
     String charset;
 
     String ip;
@@ -94,6 +96,8 @@ public class LogAnalysis {
         error("No session end found for %s", req);
         return null;
       }
+
+      logPrefix = field();
 
       charset = field();
       if (charset == null) {
