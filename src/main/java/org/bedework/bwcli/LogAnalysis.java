@@ -3,6 +3,8 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.util.misc.ToString;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -165,6 +167,21 @@ public class LogAnalysis {
 
       return res;
     }
+
+    void toStringSegment(final ToString ts) {
+      ts.append("taskId", taskId);
+      ts.append("sessionId", sessionId);
+      ts.append("logPrefix", logPrefix);
+      ts.append("charset", charset);
+    }
+
+    public String toString() {
+      final ToString ts = new ToString(this);
+
+      toStringSegment(ts);
+
+      return ts.toString();
+    }
   }
 
   private String taskId(final String ln) {
@@ -320,6 +337,13 @@ public class LogAnalysis {
 
       return res;
     }
+
+    void toStringSegment(final ToString ts) {
+      super.toStringSegment(ts);
+
+      ts.append("ip", ip);
+      ts.append("url", url);
+    }
   }
 
   final Map<String, Integer> ipMap = new HashMap<>();
@@ -468,7 +492,7 @@ public class LogAnalysis {
       }
 
       if (!mapRs.sameTask(rs)) {
-        out("Not same task %s", mapRs.taskId);
+        out("Not same task %s\n %s", mapRs.toString(), rs.toString());
 
         return;
       }
