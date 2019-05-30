@@ -314,10 +314,13 @@ public class LogAnalysis {
         return false;
       }
 
+      /* url will not match because we may have been redirected (to
+         a jsp page)
       if (!url.equals(otherEntry.url)) {
         out("url mismatch");
         return false;
       }
+       */
 
       return true;
     }
