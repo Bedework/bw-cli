@@ -111,10 +111,6 @@ public class LogAnalysis {
         return false;
       }
 
-      if (!logName.equals(otherEntry.logName)) {
-        return false;
-      }
-
       if (!sessionId.equals(otherEntry.sessionId)) {
         return false;
       }
