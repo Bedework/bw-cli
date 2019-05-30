@@ -108,18 +108,22 @@ public class LogAnalysis {
 
     boolean sameTask(final LogEntry otherEntry) {
       if (!taskId.equals(otherEntry.taskId)) {
+        out("taskId mismatch");
         return false;
       }
 
       if (!sessionId.equals(otherEntry.sessionId)) {
+        out("sessionId mismatch");
         return false;
       }
 
       if (!logPrefix.equals(otherEntry.logPrefix)) {
+        out("logPrefix mismatch");
         return false;
       }
 
       if (!charset.equals(otherEntry.charset)) {
+        out("charset mismatch");
         return false;
       }
 
@@ -287,10 +291,12 @@ public class LogAnalysis {
       }
 
       if (!ip.equals(otherEntry.ip)) {
+        out("ip mismatch");
         return false;
       }
 
       if (!url.equals(otherEntry.url)) {
+        out("url mismatch");
         return false;
       }
 
