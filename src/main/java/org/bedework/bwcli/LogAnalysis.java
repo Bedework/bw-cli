@@ -119,6 +119,7 @@ public class LogAnalysis {
         return false;
       }
 
+      /* These 2 don't always match -- why?
       if (!logPrefix.equals(otherEntry.logPrefix)) {
         out("logPrefix mismatch");
         return false;
@@ -128,6 +129,7 @@ public class LogAnalysis {
         out("charset mismatch");
         return false;
       }
+      */
 
       return true;
     }
