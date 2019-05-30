@@ -3,9 +3,14 @@
 */
 package org.bedework.bwcli;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
+import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -55,13 +60,6 @@ public class LogAnalysis {
 
     String charset;
 
-    String ip;
-
-    String url;
-
-    String context;
-    String request;
-
     /**
      * @param req log entry
      * @return position we reached or null for bad record
@@ -106,6 +104,30 @@ public class LogAnalysis {
       }
 
       return curPos;
+    }
+
+    boolean sameTask(final LogEntry otherEntry) {
+      if (!taskId.equals(otherEntry.taskId)) {
+        return false;
+      }
+
+      if (!logName.equals(otherEntry.logName)) {
+        return false;
+      }
+
+      if (!sessionId.equals(otherEntry.sessionId)) {
+        return false;
+      }
+
+      if (!logPrefix.equals(otherEntry.logPrefix)) {
+        return false;
+      }
+
+      if (!charset.equals(otherEntry.charset)) {
+        return false;
+      }
+
+      return true;
     }
 
     public Long millis() {
@@ -161,6 +183,17 @@ public class LogAnalysis {
   }
 
   class ReqInOutLogEntry extends LogEntry {
+    String ip;
+
+    String url;
+
+    boolean unparseable;
+
+    List<NameValuePair> params;
+
+    String context;
+    String request;
+
     String referer;
     String xForwardedFor;
 
@@ -241,7 +274,31 @@ public class LogAnalysis {
         return null;
       }
 
+      try {
+        params = URLEncodedUtils.parse(new URI(url),
+                                       Charset.forName("UTF-8"));
+        unparseable = false;
+      } catch (final Throwable ignored) {
+        unparseable = true;
+      }
+
       return curPos;
+    }
+
+    boolean sameTask(final ReqInOutLogEntry otherEntry) {
+      if (!super.sameTask(otherEntry)) {
+        return false;
+      }
+
+      if (!ip.equals(otherEntry.ip)) {
+        return false;
+      }
+
+      if (!url.equals(otherEntry.url)) {
+        return false;
+      }
+
+      return true;
     }
 
     boolean hasJsessionid() {
@@ -404,6 +461,12 @@ public class LogAnalysis {
 
       if (mapRs.context == null) {
         out("No context for %s %s", mapRs.dt, mapRs.request);
+
+        return;
+      }
+
+      if (!mapRs.sameTask(rs)) {
+        out("Not same task %s", mapRs.taskId);
 
         return;
       }
