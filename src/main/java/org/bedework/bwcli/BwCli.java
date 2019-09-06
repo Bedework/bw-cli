@@ -94,7 +94,7 @@ public class BwCli extends JolokiaCli {
     register(new ToolUser());
   }
 
-  public JolokiaClient makeClient(final String uri) throws Throwable {
+  public JolokiaClient makeClient(final String uri) {
     return new JolokiaConfigClient(uri, id, pw);
   }
 
@@ -106,7 +106,7 @@ public class BwCli extends JolokiaCli {
     return webClient;
   }
 
-  public HttpClient getCl() throws Throwable {
+  public HttpClient getCl() {
     return getWebClient().getCl();
   }
   
@@ -230,13 +230,17 @@ public class BwCli extends JolokiaCli {
       om = new JsonMapper();
     }
 
-    public HttpClient getCl() throws Throwable {
+    public HttpClient getCl() {
       if (cl != null) {
         return cl;
       }
 
-      cl = new HttpClient(new URI(url));
-      
+      try {
+        cl = new HttpClient(new URI(url));
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
+      }
+
       return cl;
     }
 
