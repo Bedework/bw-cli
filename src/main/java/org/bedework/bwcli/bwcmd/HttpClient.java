@@ -3,7 +3,7 @@
 */
 package org.bedework.bwcli.bwcmd;
 
-/**
+/*
  * User: mike
  * Date: 3/7/17
  * Time: 18:05
@@ -16,6 +16,7 @@ import org.bedework.util.misc.Util;
 
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /** Carry out all communications with web service
@@ -26,7 +27,7 @@ public class HttpClient extends PooledHttpClient {
       super(uri,
             new JsonMapper());
 
-      setHeadersFetcher(() -> getHeaders());
+      setHeadersFetcher(this::getHeaders);
   }
 
   /*
@@ -54,7 +55,7 @@ public class HttpClient extends PooledHttpClient {
   }
 
   private String encode(final String val) throws Throwable {
-    return URLEncoder.encode(val, "UTF-8");
+    return URLEncoder.encode(val, StandardCharsets.UTF_8);
   }
 
   private static class ReqBldr {
@@ -127,7 +128,8 @@ public class HttpClient extends PooledHttpClient {
         listDelim = ",";
       }
 
-      req.append(URLEncoder.encode(sb.toString(), "UTF-8"));
+      req.append(URLEncoder.encode(sb.toString(),
+                                   StandardCharsets.UTF_8));
     }
 
     public String toString() {
@@ -135,7 +137,7 @@ public class HttpClient extends PooledHttpClient {
     }
 
     private static String encode(final String val) throws Throwable {
-      return URLEncoder.encode(val, "UTF-8");
+      return URLEncoder.encode(val, StandardCharsets.UTF_8);
     }
   }
 }
