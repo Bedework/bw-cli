@@ -139,10 +139,10 @@ public class LogAnalysis {
         // 2019-01-04 00:00:11,742 ...
         // 0123456789012345678901234
 
-        final long hrs = Integer.valueOf(req.substring(11, 13));
-        final long mins = Integer.valueOf(req.substring(14, 16));
-        final long secs = Integer.valueOf(req.substring(17, 19));
-        final long millis = Integer.valueOf(req.substring(20, 23));
+        final long hrs = Integer.parseInt(req.substring(11, 13));
+        final long mins = Integer.parseInt(req.substring(14, 16));
+        final long secs = Integer.parseInt(req.substring(17, 19));
+        final long millis = Integer.parseInt(req.substring(20, 23));
 
         return ((((hrs * 60) + mins) * 60) + secs) * 1000 + millis;
       } catch (final Throwable ignored) {
@@ -542,11 +542,11 @@ public class LogAnalysis {
     return rs;
   }
 
-  private boolean infoLine(final String ln) throws Throwable {
+  private boolean infoLine(final String ln) {
     return ln.indexOf(" INFO ") == 23;
   }
 
-  private boolean tryErrorLine(final String ln) throws Throwable {
+  private boolean tryErrorLine(final String ln) {
     if (ln.indexOf(" ERROR ") != 23) {
       return false;
     }
