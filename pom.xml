@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.bedework</groupId>
 	<artifactId>bw-cli</artifactId>
-	<version>4.0.8-SNAPSHOT</version>
+	<version>4.0.8</version>
 	<name>bw-cli</name>
   <description>A command line client for bedework system admin</description>
   <url>https://github.com/Bedework/bw-cli</url>
@@ -45,7 +45,7 @@
     <connection>scm:git:git@github.com:Bedework/bw-cli.git</connection>
     <developerConnection>scm:git:git@github.com:Bedework/bw-cli.git</developerConnection>
     <url>https://github.com/Bedework/bw-util</url>
-    <tag>HEAD</tag>
+    <tag>bw-cli-4.0.8</tag>
   </scm>
 
   <issueManagement>
