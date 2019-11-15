@@ -15,6 +15,7 @@
 
 		<!-- Bedework Versions -->
     <bw-access.version>4.0.7</bw-access.version>
+    <bw-cliutil.version>4.1.0-SNAPSHOT</bw-cliutil.version>
     <bw-util.version>4.0.26</bw-util.version>
     <bw-util-logging.version>4.0.4</bw-util-logging.version>
 
@@ -92,13 +93,19 @@
 
     <dependency>
       <groupId>org.bedework</groupId>
-      <artifactId>bw-util-args</artifactId>
-      <version>${bw-util.version}</version>
+      <artifactId>bw-util-cli</artifactId>
+      <version>${bw-cliutil.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.bedework</groupId>
-      <artifactId>bw-util-cli</artifactId>
+      <artifactId>bw-util-jolokia</artifactId>
+      <version>${bw-cliutil.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bedework</groupId>
+      <artifactId>bw-util-args</artifactId>
       <version>${bw-util.version}</version>
     </dependency>
 
@@ -111,12 +118,6 @@
     <dependency>
       <groupId>org.bedework</groupId>
       <artifactId>bw-util-jmx</artifactId>
-      <version>${bw-util.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.bedework</groupId>
-      <artifactId>bw-util-jolokia</artifactId>
       <version>${bw-util.version}</version>
     </dependency>
 

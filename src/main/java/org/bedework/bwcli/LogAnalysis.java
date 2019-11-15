@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -294,8 +293,7 @@ public class LogAnalysis {
       }
 
       try {
-        params = URLEncodedUtils.parse(new URI(url),
-                                       Charset.forName("UTF-8"));
+        params = URLEncodedUtils.parse(new URI(url), "UTF-8");
         unparseable = false;
       } catch (final Throwable ignored) {
         unparseable = true;

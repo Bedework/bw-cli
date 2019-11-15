@@ -11,7 +11,6 @@ import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.net.URI;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -141,8 +140,7 @@ public class AccessLogs {
 
     final URI uri = new URI(urlStr);
 
-    List<NameValuePair> params = URLEncodedUtils
-            .parse(uri, Charset.forName("UTF-8"));
+    List<NameValuePair> params = URLEncodedUtils.parse(uri, "UTF-8");
 
     final Map<String, List<String>> paramsMap = new HashMap<>();
 
