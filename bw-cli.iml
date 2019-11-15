@@ -11,6 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.bedework:bw-util-cli:4.1.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.bedework:bw-access:4.0.7" level="project" />
     <orderEntry type="library" name="Maven: org.bedework:bw-util-caching:4.0.25" level="project" />
     <orderEntry type="module" module-name="bw-util-cli" />
