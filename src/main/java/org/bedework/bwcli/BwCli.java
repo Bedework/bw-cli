@@ -135,6 +135,7 @@ public class BwCli extends JolokiaCli {
     String jmxUrl = null;
     boolean logShowLong = false;
     boolean logShowMissingTaskIds = false;
+    boolean logSummariseTests = false;
     boolean debug = false;
 
     try {
@@ -156,9 +157,15 @@ public class BwCli extends JolokiaCli {
           continue;
         }
 
+        if (pargs.ifMatch("logsummarisetests")) {
+          logSummariseTests = true;
+          continue;
+        }
+
         if (pargs.ifMatch("loganalyse")) {
           new LogAnalysis().process(pargs.next(), logShowLong,
-                                    logShowMissingTaskIds);
+                                    logShowMissingTaskIds,
+                                    logSummariseTests);
           return;  // Always 1 shot
         }
 

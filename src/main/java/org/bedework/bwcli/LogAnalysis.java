@@ -3,15 +3,12 @@
 */
 package org.bedework.bwcli;
 
-import org.bedework.util.misc.ToString;
-
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
+import org.bedework.bwcli.logs.LogEntry;
+import org.bedework.bwcli.logs.ReqInOutLogEntry;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -41,315 +38,10 @@ public class LogAnalysis {
   long unterminatedTask;
   boolean showLong;
   boolean showMissingTaskIds;
+  boolean summariseTests;
 
   final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
 
-  // base for REQUEST and REQUEST-OUT
-  class LogEntry {
-    String req;
-    int curPos; // while parsing
-
-    Long millis;
-    String dt;
-    String taskId;
-
-    String logName;
-
-    String sessionId;
-
-    String logPrefix;
-
-    String charset;
-
-    /**
-     * @param req log entry
-     * @return position we reached or null for bad record
-     */
-    Integer parse(final String req,
-                  final String logName) {
-      this.req = req;
-      this.logName = logName;
-      dt = req.substring(0, req.indexOf(" INFO"));
-      millis = millis();
-      if (millis == null) {
-        error("Unable to get millis for %s", req);
-        return null;
-      }
-
-      taskId = taskId(req);
-
-      curPos = req.indexOf(logName + ":");
-
-      if (curPos < 0) {
-        error("No name found for %s", req);
-        return null;
-      }
-
-      if (!logName.equals(field())) {
-        error("Expected %s for %s", logName, req);
-        return null;
-      }
-
-      sessionId = field();
-      if (sessionId == null) {
-        error("No session end found for %s", req);
-        return null;
-      }
-
-      logPrefix = field();
-
-      charset = field();
-      if (charset == null) {
-        error("No charset found for %s", req);
-        return null;
-      }
-
-      return curPos;
-    }
-
-    boolean sameTask(final LogEntry otherEntry) {
-      if (!taskId.equals(otherEntry.taskId)) {
-        out("taskId mismatch");
-        return false;
-      }
-
-      if (!sessionId.equals(otherEntry.sessionId)) {
-        out("sessionId mismatch");
-        return false;
-      }
-
-      /* These 2 don't always match -- why?
-      if (!logPrefix.equals(otherEntry.logPrefix)) {
-        out("logPrefix mismatch");
-        return false;
-      }
-
-      if (!charset.equals(otherEntry.charset)) {
-        out("charset mismatch");
-        return false;
-      }
-      */
-
-      return true;
-    }
-
-    public Long millis() {
-      try {
-        // 2019-01-04 00:00:11,742 ...
-        // 0123456789012345678901234
-
-        final long hrs = Integer.parseInt(req.substring(11, 13));
-        final long mins = Integer.parseInt(req.substring(14, 16));
-        final long secs = Integer.parseInt(req.substring(17, 19));
-        final long millis = Integer.parseInt(req.substring(20, 23));
-
-        return ((((hrs * 60) + mins) * 60) + secs) * 1000 + millis;
-      } catch (final Throwable ignored) {
-        return null;
-      }
-    }
-
-    // Expect this next
-    String field() {
-      return field("");
-    }
-
-    // Needed because ipv6 addresses have ':'
-    String field(final String nextFieldStart) {
-      final int start = curPos;
-      final int end = req.indexOf(":" + nextFieldStart, start);
-      if (end < 0) {
-        error("No end found for %s", req);
-        return null;
-      }
-
-      final String res = req.substring(start, end);
-      curPos = end + 1; // Skip only the ":"
-
-      return res;
-    }
-
-    void toStringSegment(final ToString ts) {
-      ts.append("taskId", taskId);
-      ts.append("sessionId", sessionId);
-      ts.append("logPrefix", logPrefix);
-      ts.append("charset", charset);
-    }
-
-    public String toString() {
-      final ToString ts = new ToString(this);
-
-      toStringSegment(ts);
-
-      return ts.toString();
-    }
-  }
-
-  private String taskId(final String ln) {
-    final int taskIdPos = ln.indexOf("] (default");
-    if (taskIdPos < 0) {
-      return null;
-    }
-
-    final int endTaskIdPos = ln.indexOf(")", taskIdPos);
-
-    if (endTaskIdPos < 0) {
-      return null;
-    }
-
-    return ln.substring(taskIdPos, endTaskIdPos + 1);
-  }
-
-  class ReqInOutLogEntry extends LogEntry {
-    String ip;
-
-    String url;
-
-    boolean unparseable;
-
-    List<NameValuePair> params;
-
-    String context;
-    String request;
-
-    String referer;
-    String xForwardedFor;
-
-    Integer parse(final String req,
-                  final String logName) {
-      if (super.parse(req, logName) == null) {
-        return null;
-      }
-
-      ip = field("http");
-      if (ip == null) {
-        error("No ip for %s", req);
-        return null;
-      }
-
-      url = dashField();
-      if (url == null) {
-        error("No url for %s", req);
-        return null;
-      }
-
-      String fname = field();
-      if (!"Referer".equals(fname)) {
-        error("Expected referer for %s", req);
-        return null;
-      }
-
-      referer = dashField();
-
-      fname = field();
-      if (!"X-Forwarded-For".equals(fname)) {
-        error("Expected X-Forwarded-For for %s", req);
-        return null;
-      }
-
-      // I think it's always the last field
-      xForwardedFor = req.substring(curPos);
-
-      if (!xForwardedFor.equals("NONE")) {
-        ip = xForwardedFor;
-      }
-
-      Integer ct = ipMap.computeIfAbsent(ip, k -> 0);
-
-      ct = ct + 1;
-      ipMap.put(ip, ct);
-
-      // Parse out the url
-      int urlPos = 10; // safely past the "//"
-
-      final int reqPos = urlPos;
-
-      urlPos = url.indexOf("/", urlPos);
-      if (urlPos < 0) {
-        // No context
-        return curPos;
-      }
-
-      urlPos++; // past the /
-
-      final int endContextPos = url.indexOf("/", urlPos);
-      if (endContextPos < 0) {
-        return curPos;
-      }
-
-      try {
-        context = url.substring(urlPos, endContextPos);
-        request = url.substring(reqPos);
-
-        if (context.trim().length() == 0) {
-          context = null;
-        }
-      } catch (final Throwable t) {
-        out("%s", req);
-        out("%s: %s: %s ",
-            urlPos, endContextPos,
-            reqPos);
-        return null;
-      }
-
-      try {
-        params = URLEncodedUtils.parse(new URI(url), "UTF-8");
-        unparseable = false;
-      } catch (final Throwable ignored) {
-        unparseable = true;
-      }
-
-      return curPos;
-    }
-
-    boolean sameTask(final ReqInOutLogEntry otherEntry) {
-      if (!super.sameTask(otherEntry)) {
-        return false;
-      }
-
-      if (!ip.equals(otherEntry.ip)) {
-        out("ip mismatch");
-        return false;
-      }
-
-      /* url will not match because we may have been redirected (to
-         a jsp page)
-      if (!url.equals(otherEntry.url)) {
-        out("url mismatch");
-        return false;
-      }
-       */
-
-      return true;
-    }
-
-    boolean hasJsessionid() {
-      return (url != null) && url.contains(";jsessionid=");
-    }
-
-    String dashField() {
-      final int start = curPos;
-      final int end = req.indexOf(" - ", start);
-      if (end < 0) {
-        error("No request found for %s", req);
-        return null;
-      }
-
-      final String res = req.substring(start, end);
-      curPos = end + 3;
-
-      return res;
-    }
-
-    void toStringSegment(final ToString ts) {
-      super.toStringSegment(ts);
-
-      ts.append("ip", ip);
-      ts.append("url", url);
-    }
-  }
-
-  final Map<String, Integer> ipMap = new HashMap<>();
   final Map<String, Integer> longreqIpMap = new HashMap<>();
   final Map<String, ReqInOutLogEntry> tasks = new HashMap<>();
 
@@ -388,11 +80,11 @@ public class LogAnalysis {
         if (showLong) {
           final String dt = ln.substring(0, ln.indexOf(" INFO"));
 
-          out("Long request %s %s %d: %s - %s %s",
-              rs.ip, rs.taskId, millis, rs.dt, dt, rs.request);
+          outFmt("Long request %s %s %d: %s - %s %s",
+                 rs.ip, rs.taskId, millis, rs.dt, dt, rs.request);
         }
 
-        Integer ct = longreqIpMap.computeIfAbsent(rs.ip, k -> 0);
+        int ct = longreqIpMap.computeIfAbsent(rs.ip, k -> 0);
 
         ct = ct + 1;
         longreqIpMap.put(rs.ip, ct);
@@ -411,9 +103,11 @@ public class LogAnalysis {
 
   public boolean process(final String logPathName,
                          final boolean showLong,
-                         final boolean showMissingTaskIds) {
+                         final boolean showMissingTaskIds,
+                         final boolean summariseTests) {
     this.showLong = showLong;
     this.showMissingTaskIds = showMissingTaskIds;
+    this.summariseTests = summariseTests;
 
     try {
       final Path logPath = Paths.get(logPathName);
@@ -434,6 +128,10 @@ public class LogAnalysis {
           continue;
         }
 
+        if (summariseTests && debugLine(s)) {
+          doSummariseTests(s);
+        }
+
         tryErrorLine(s);
       }
 
@@ -446,7 +144,7 @@ public class LogAnalysis {
     }
   }
 
-  private void doInfo(final String s) throws Throwable {
+  private void doInfo(final String s) {
     if (s.contains(wildflyStart)) {
       // Wildfly restarted
       tasks.clear();
@@ -460,6 +158,10 @@ public class LogAnalysis {
     ReqInOutLogEntry rs = tryRequestLine(s);
 
     if (rs != null) {
+      if (summariseTests) {
+        outSummary(rs);
+      }
+
       final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
 
       if (mapRs != null) {
@@ -475,27 +177,31 @@ public class LogAnalysis {
     rs = tryRequestOut(s);
 
     if (rs != null) {
+      if (summariseTests) {
+        outSummary(rs);
+      }
+
       final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
 
       if (mapRs == null) {
         if (showMissingTaskIds) {
           final String dt = s.substring(0, s.indexOf(" INFO"));
 
-          out("Missing taskid %s %s",
-              rs.taskId, dt);
+          outFmt("Missing taskid %s %s",
+                 rs.taskId, dt);
         }
 
         return;
       }
 
       if (mapRs.context == null) {
-        out("No context for %s %s", mapRs.dt, mapRs.request);
+        outFmt("No context for %s %s", mapRs.dt, mapRs.request);
 
         return;
       }
 
       if (!mapRs.sameTask(rs)) {
-        out("Not same task %s\n %s", mapRs.toString(), rs.toString());
+        outFmt("Not same task %s\n %s", mapRs.toString(), rs.toString());
 
         return;
       }
@@ -517,16 +223,89 @@ public class LogAnalysis {
     }
   }
 
-  private ReqInOutLogEntry tryRequestLine(final String ln) throws Throwable {
+  private void doSummariseTests(final String s) {
+    // Display various lines from the log
+    // 2020-01-14 15:46:04,709 DEBUG [org.bedework.caldav.server.CaldavBWServlet] (default task-1) entry: PROPFIND
+
+    if (s.contains(" entry: ")) {
+      outSummary(s);
+      return;
+    }
+
+    if (s.contains(" User-Agent =")) {
+      outSummary(s);
+      return;
+    }
+
+    if (s.contains(" getRequestURI =")) {
+      outSummary(s);
+      return;
+    }
+
+    if (s.contains(" getRemoteUser =")) {
+      outSummary(s);
+      return;
+    }
+
+    if (s.contains("=BwInoutSched")) {
+      outSchedSummary(s);
+      return;
+    }
+
+  }
+
+  private void outSummary(final String s) {
+    final LogEntry le = new LogEntry();
+
+    if (le.parse(s, null, "DEBUG") == null) {
+      out(s);
+      return;
+    }
+
+    outFmt("%s %-4s %-8s %s %s", le.dt,
+           le.sinceLastMillis, le.sinceStartMillis,
+           taskIdSummary(le), le.logText);
+  }
+
+  private void outSummary(final LogEntry le) {
+    outFmt("%s %-4s %-8s %s %s", le.dt,
+           le.sinceLastMillis, le.sinceStartMillis,
+           taskIdSummary(le), le.logText);
+  }
+
+  private String taskIdSummary(final LogEntry le) {
+    if (le.taskId.startsWith("default ")) {
+      return le.taskId.substring(8);
+    }
+
+    if (le.taskId.startsWith("org.bedework.bwengine:service=")) {
+      return le.taskId.substring(30);
+    }
+
+    return le.taskId;
+  }
+
+  private void outSchedSummary(final String s) {
+    if (s.contains("set event to")) {
+      outSummary(s);
+      return;
+    }
+
+    if (s.contains("Indexing to")) {
+      outSummary(s);
+    }
+  }
+
+  private ReqInOutLogEntry tryRequestLine(final String ln) {
     return tryRequestInOutLine(ln, "REQUEST");
   }
 
-  private ReqInOutLogEntry tryRequestOut(final String ln) throws Throwable {
+  private ReqInOutLogEntry tryRequestOut(final String ln) {
     return tryRequestInOutLine(ln, "REQUEST-OUT");
   }
 
   private ReqInOutLogEntry tryRequestInOutLine(final String ln,
-                                               final String reqName) throws Throwable {
+                                               final String reqName) {
     if (!ln.contains(" " + reqName + ":")) {
       return null;
     }
@@ -544,6 +323,10 @@ public class LogAnalysis {
     return ln.indexOf(" INFO ") == 23;
   }
 
+  private boolean debugLine(final String ln) {
+    return ln.indexOf(" DEBUG ") == 23;
+  }
+
   private boolean tryErrorLine(final String ln) {
     if (ln.indexOf(" ERROR ") != 23) {
       return false;
@@ -555,12 +338,12 @@ public class LogAnalysis {
   }
 
   private void results() {
-    out("Total requests: %d", totalRequests);
+    outFmt("Total requests: %d", totalRequests);
     if (totalForwardedRequests != totalRequests) {
-      out("Total forwarded requests: %d", totalForwardedRequests);
+      outFmt("Total forwarded requests: %d", totalForwardedRequests);
     }
 
-    out("Millis per request by context per 100 millis");
+    outFmt("Millis per request by context per 100 millis");
 
     final Set<String> contextNames = new TreeSet<>(contexts.keySet());
 
@@ -586,7 +369,7 @@ public class LogAnalysis {
       cx++;
     }
 
-    out("%s", header);
+    outFmt("%s", header);
 
     // Output each bucket for each context
 
@@ -605,7 +388,7 @@ public class LogAnalysis {
         ci.rTotalReq += ci.buckets[i];
       }
 
-      out("%s", l);
+      outFmt("%s", l);
     }
 
     // Total lines
@@ -638,26 +421,26 @@ public class LogAnalysis {
                                      (int)(ci.subTtotalMillis / ci.subTrequests)));
     }
 
-    out("%s", sessReq);
-    out("%s", totReq);
-    out("%s", avgMs);
-    out("%s", "Figures ignoring highest bucket:");
-    out("%s", subTtotReq);
-    out("%s", subTavgMs);
+    outFmt("%s", sessReq);
+    outFmt("%s", totReq);
+    outFmt("%s", avgMs);
+    outFmt("%s", "Figures ignoring highest bucket:");
+    outFmt("%s", subTtotReq);
+    outFmt("%s", subTavgMs);
     out();
 
-    out("Total error lines: %d", errorLines);
+    outFmt("Total error lines: %d", errorLines);
 
     out();
 
     final int numIps = 20;
-    out("List of top %d ips", numIps);
+    outFmt("List of top %d ips", numIps);
 
     final List<Map.Entry<String, Integer>> sorted =
-            sortMap(ipMap);
+            sortMap(ReqInOutLogEntry.ipMap);
     int ct = 0;
     for (Map.Entry<String, Integer> ent: sorted) {
-      out("%s\t%d", ent.getKey(), ent.getValue());
+      outFmt("%s\t%d", ent.getKey(), ent.getValue());
       ct++;
 
       if (ct > numIps) {
@@ -667,13 +450,13 @@ public class LogAnalysis {
 
     out();
 
-    out("List of top %d long request ips", numIps);
+    outFmt("List of top %d long request ips", numIps);
 
     final List<Map.Entry<String, Integer>> longSorted =
             sortMap(longreqIpMap);
     ct = 0;
     for (Map.Entry<String, Integer> ent: longSorted) {
-      out("%s\t%d", ent.getKey(), ent.getValue());
+      outFmt("%s\t%d", ent.getKey(), ent.getValue());
       ct++;
 
       if (ct > numIps) {
@@ -694,8 +477,12 @@ public class LogAnalysis {
     return list;
   }
 
-  private void out(final String format, Object... args) {
+  private void outFmt(final String format, Object... args) {
     System.out.println(String.format(format, args));
+  }
+
+  private void out(final String val) {
+    System.out.println(val);
   }
 
   private void error(final String format, Object... args) {
