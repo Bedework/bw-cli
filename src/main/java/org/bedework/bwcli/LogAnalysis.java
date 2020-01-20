@@ -40,6 +40,8 @@ public class LogAnalysis {
   boolean showMissingTaskIds;
   boolean summariseTests;
 
+  boolean dumpIndented;
+
   final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
 
   final Map<String, Integer> longreqIpMap = new HashMap<>();
@@ -121,6 +123,16 @@ public class LogAnalysis {
 
         if (s == null) {
           break;
+        }
+
+        if (dumpIndented) {
+          // dump the rest of some formatted output.
+          if (s.startsWith(" ")) {
+            out(s);
+            continue;
+          }
+
+          dumpIndented = false;
         }
 
         if (infoLine(s)) {
@@ -293,6 +305,15 @@ public class LogAnalysis {
 
     if (s.contains("Indexing to")) {
       outSummary(s);
+    }
+
+    if (s.contains("Add event with name")) {
+      outSummary(s);
+    }
+
+    if (s.contains("Received messageEntityQueuedEvent")) {
+      outSummary(s);
+      dumpIndented = true;
     }
   }
 
