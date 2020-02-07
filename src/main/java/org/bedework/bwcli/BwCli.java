@@ -267,7 +267,11 @@ public class BwCli extends JolokiaCli {
     System.err.println("   debug              To enable debug traces");
     System.err.println("   logshowlong        To enable display of long requests" +
                        "                      in loganalyse");
-    System.err.println("   loganalyse <path>  Calculate and display information" +
-                       "                      from referenced log file");
+    System.err.println("   [logsummarisetests] loganalyse <path>  " +
+                       "                      Calculate and display information" +
+                       "                      from referenced log file. If" +
+                       "                      logsummarisetests is present then " +
+                       "                      display a summary to help when" +
+                       "                      running the tests");
   }
 }

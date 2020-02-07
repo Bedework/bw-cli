@@ -40,6 +40,10 @@ public class LogAnalysis {
   boolean showMissingTaskIds;
   boolean summariseTests;
 
+  int waitcountCount;
+  LogEntry lastReqline;
+  LogEntry lastEntry;
+
   boolean dumpIndented;
 
   final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
@@ -171,7 +175,7 @@ public class LogAnalysis {
 
     if (rs != null) {
       if (summariseTests) {
-        outSummary(rs);
+        lastReqline = rs;
       }
 
       final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
@@ -189,7 +193,7 @@ public class LogAnalysis {
     rs = tryRequestOut(s);
 
     if (rs != null) {
-      if (summariseTests) {
+      if (summariseTests && waitcountCount <= 1) {
         outSummary(rs);
       }
 
@@ -238,48 +242,87 @@ public class LogAnalysis {
   private void doSummariseTests(final String s) {
     // Display various lines from the log
     // 2020-01-14 15:46:04,709 DEBUG [org.bedework.caldav.server.CaldavBWServlet] (default task-1) entry: PROPFIND
+    final LogEntry le = new LogEntry();
 
-    if (s.contains(" entry: ")) {
-      outSummary(s);
+    if (le.parse(s, null, "DEBUG") == null) {
+      out(s + " ******************** Unparseable");
       return;
     }
 
-    if (s.contains(" User-Agent =")) {
-      outSummary(s);
+    if (s.contains(" entry: ")) {
+      lastEntry = le;
+      return;
+    }
+
+    /* TODO - still not right....
+       We should check the task id between a request in and out.
+       If it's different then we have some interleaved request
+     */
+
+    /* If it's a WAITCOUNT and there's been a WAITCOUNT with no
+       other task output just bump the count.
+     */
+
+    final var testUserAgentLabel = "User-Agent = \"Cal-Tester: ";
+    final var isUserAgent = s.contains("User-Agent = \"");
+    var isCalTest = s.contains(testUserAgentLabel);
+    var isWaitcount = isCalTest && s.contains("WAITCOUNT ");
+
+    if (isWaitcount) {
+      //
+      if (waitcountCount > 0) {
+        waitcountCount++;
+        return;
+      }
+
+      lastEntry = null;
+      waitcountCount = 1;
+    } else if (isUserAgent && (waitcountCount > 0)) {
+      out(">---------------------------- WAITVOUNT = " + waitcountCount);
+      waitcountCount = 0;
+    }
+
+    if (waitcountCount > 1) {
+      return;
+    }
+
+    if (s.contains(" User-Agent = \"")) {
+      outSummary(lastReqline);
+      outSummary(lastEntry);
+      var pos = le.logText.indexOf(testUserAgentLabel);
+      if (pos >= 0) {
+        le.logText = "------------- Test ---> " +
+                le.logText.substring(0, pos) +
+                le.logText.substring(pos + testUserAgentLabel.length(),
+                                     le.logText.length() - 1) +
+                "<------------------";
+        outSummary(le);
+      }
+
       return;
     }
 
     if (s.contains(" getRequestURI =")) {
-      outSummary(s);
+      outSummary(le);
       return;
     }
 
     if (s.contains(" getRemoteUser =")) {
-      outSummary(s);
+      outSummary(le);
       return;
     }
 
     if (s.contains("=BwInoutSched")) {
-      outSchedSummary(s);
+      outSchedSummary(le);
       return;
     }
 
-  }
-
-  private void outSummary(final String s) {
-    final LogEntry le = new LogEntry();
-
-    if (le.parse(s, null, "DEBUG") == null) {
-      out(s);
-      return;
-    }
-
-    outFmt("%s %-4s %-8s %s %s", le.dt,
-           le.sinceLastMillis, le.sinceStartMillis,
-           taskIdSummary(le), le.logText);
   }
 
   private void outSummary(final LogEntry le) {
+    if (le == null) {
+      return;
+    }
     outFmt("%s %-4s %-8s %s %s", le.dt,
            le.sinceLastMillis, le.sinceStartMillis,
            taskIdSummary(le), le.logText);
@@ -297,22 +340,24 @@ public class LogAnalysis {
     return le.taskId;
   }
 
-  private void outSchedSummary(final String s) {
+  private void outSchedSummary(final LogEntry le) {
+    var s = le.logText;
+
     if (s.contains("set event to")) {
-      outSummary(s);
+      outSummary(le);
       return;
     }
 
     if (s.contains("Indexing to")) {
-      outSummary(s);
+      outSummary(le);
     }
 
     if (s.contains("Add event with name")) {
-      outSummary(s);
+      outSummary(le);
     }
 
     if (s.contains("Received messageEntityQueuedEvent")) {
-      outSummary(s);
+      outSummary(le);
       dumpIndented = true;
     }
   }
