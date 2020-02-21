@@ -199,12 +199,22 @@ public class AccessLogs {
 
   private void out1day(final String day,
                        final AccessDay dayVal) {
+    out("Ip counts for %s", day);
+    out();
+
     final List<Map.Entry<String, Integer>> longSorted =
             Util.sortMap(dayVal.ipCounts);
 
+    long total = 0L;
+
     for (Map.Entry<String, Integer> ent: longSorted) {
-      outFmt("%s\t%d", ent.getKey(), ent.getValue());
+      int ct = ent.getValue();
+      total += ct;
+      outFmt("%s\t%d", ent.getKey(), ct);
     }
+
+    out();
+    out("Total: %s", total);
   }
 
   private void outFmt(final String format, Object... args) {
