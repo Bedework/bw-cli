@@ -5,15 +5,14 @@ package org.bedework.bwcli;
 
 import org.bedework.bwcli.logs.LogEntry;
 import org.bedework.bwcli.logs.ReqInOutLogEntry;
+import org.bedework.util.misc.Util;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -503,7 +502,7 @@ public class LogAnalysis {
     outFmt("List of top %d ips", numIps);
 
     final List<Map.Entry<String, Integer>> sorted =
-            sortMap(ReqInOutLogEntry.ipMap);
+            Util.sortMap(ReqInOutLogEntry.ipMap);
     int ct = 0;
     for (Map.Entry<String, Integer> ent: sorted) {
       outFmt("%s\t%d", ent.getKey(), ent.getValue());
@@ -519,7 +518,7 @@ public class LogAnalysis {
     outFmt("List of top %d long request ips", numIps);
 
     final List<Map.Entry<String, Integer>> longSorted =
-            sortMap(longreqIpMap);
+            Util.sortMap(longreqIpMap);
     ct = 0;
     for (Map.Entry<String, Integer> ent: longSorted) {
       outFmt("%s\t%d", ent.getKey(), ent.getValue());
@@ -529,18 +528,6 @@ public class LogAnalysis {
         break;
       }
     }
-  }
-
-  private <K, V extends Comparable> List<Map.Entry<K, V>> sortMap(Map<K, V> map) {
-    // We create a list from the elements of the unsorted map
-    List <Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
-
-    // Now sort the list
-    Comparator<Map.Entry<K, V>> comparator =
-            Comparator.comparing(Map.Entry<K, V>::getValue);
-    list.sort(comparator.reversed());
-
-    return list;
   }
 
   private void outFmt(final String format, Object... args) {

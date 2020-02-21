@@ -169,8 +169,8 @@ public class BwCli extends JolokiaCli {
           return;  // Always 1 shot
         }
 
-        if (pargs.ifMatch("legacyfeeds")) {
-          new AccessLogs().legacyFeeds(pargs.next());
+        if (pargs.ifMatch("access")) {
+          new AccessLogs().analyze(pargs.next());
           return;  // Always 1 shot
         }
 
@@ -265,6 +265,7 @@ public class BwCli extends JolokiaCli {
     System.err.println("   -cmds <qstring>    A path to a file of commands");
     System.err.println("   -cmd  <qstring>    A single quoted command to execute");
     System.err.println("   debug              To enable debug traces");
+    System.err.println("   access             Analyze access log");
     System.err.println("   logshowlong        To enable display of long requests" +
                        "                      in loganalyse");
     System.err.println("   [logsummarisetests] loganalyse <path>  " +

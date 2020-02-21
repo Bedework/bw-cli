@@ -3,17 +3,24 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.logs.AccessLogEntry;
+import org.bedework.util.misc.Util;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,14 +39,62 @@ public class AccessLogs {
   int feederUnknown;
   int webCacheUnknown;
 
-  public boolean legacyFeeds(final String logPathName) {
+  public static class AccessPeriod {
+    final Map<String, Integer> ipCounts = new HashMap<>();
+    final int periodSeconds;
+
+    AccessPeriod(final int periodSeconds) {
+      this.periodSeconds = periodSeconds;
+    }
+
+    void addIp(final String ip) {
+      var i = ipCounts.getOrDefault(ip, 0);
+      ipCounts.put(ip, i + 1);
+    }
+
+    int totalRequests() {
+      return ipCounts.values().stream().mapToInt(Number::intValue).sum();
+    }
+
+    float perSecond() {
+      return (float)totalRequests() / periodSeconds;
+    }
+
+    void add(final AccessPeriod ap) {
+      for (var ip: ap.ipCounts.keySet()) {
+        var ct = ap.ipCounts.get(ip);
+
+        var i = ipCounts.getOrDefault(ip, 0);
+        ipCounts.put(ip, i + ct);
+      }
+    }
+  }
+
+  final static int hourSecs = 60 * 60;
+
+  public static class AccessDay extends AccessPeriod {
+    final AccessPeriod[] hours = new AccessPeriod[24];
+
+    AccessDay() {
+      super(hourSecs * 24);
+
+      for (int i = 0; i <= 23; i++) {
+        hours[i] = new AccessPeriod(hourSecs);
+      }
+    }
+
+    void addIp(final String ip,
+               final int hour) {
+      hours[hour].addIp(ip);
+      addIp(ip);
+    }
+  }
+
+  public static Map<String, AccessDay> dayValues = new HashMap<>();
+
+  public boolean analyze(final String logPathName) {
     try {
-      final Path logPath = Paths.get(logPathName);
-
-      final File logFile = logPath.toFile();
-
-      final LineNumberReader lnr = new LineNumberReader(
-              new FileReader(logFile));
+      final LineNumberReader lnr = getLnr(logPathName);
 
       while (true) {
         final String s = lnr.readLine();
@@ -48,23 +103,33 @@ public class AccessLogs {
           break;
         }
 
-        if (is404(s)) {
+        final AccessLogEntry ale = AccessLogEntry.fromString(s);
+
+        if (ale == null) {
+          continue;
+        }
+
+        final AccessDay dayVal =
+                dayValues.computeIfAbsent(ale.normDate, v -> new AccessDay());
+        dayVal.addIp(ale.ip, ale.hourOfDay);
+
+        if (ale.is404()) {
           req404++;
           continue;
         }
 
-        if (is500(s)) {
+        if (ale.is500()) {
           req500++;
           continue;
         }
 
-        if (legacyFeeder(s)) {
-          doLegacyFeeder(s);
+        if (ale.legacyFeeder()) {
+          doLegacyFeeder(ale);
           continue;
         }
 
-        if (webCache(s)) {
-          doWebCache(s);
+        if (ale.webCache()) {
+          doWebCache(ale);
           continue;
         }
       }
@@ -75,6 +140,20 @@ public class AccessLogs {
     } catch (final Throwable t) {
       t.printStackTrace();
       return false;
+    }
+  }
+
+  private LineNumberReader getLnr(final String logPathName) {
+    try {
+      final Path logPath = Paths.get(logPathName);
+
+      final File logFile = logPath.toFile();
+
+      return new LineNumberReader(new FileReader(logFile));
+    } catch (final FileNotFoundException fnfe) {
+      var msg = "No such file: " + logPathName;
+      out(msg);
+      throw new RuntimeException(msg);
     }
   }
 
@@ -98,47 +177,42 @@ public class AccessLogs {
       pattern++;
     }
     out("Total unknown webcache requests: %d", webCacheUnknown);
-  }
 
-  private boolean is404(final String s) throws Throwable {
-    return isBadStatus(s, "404");
-  }
+    final List<String> days = new ArrayList<>(dayValues.keySet());
+    Collections.sort(days);
 
-  private boolean is500(final String s) throws Throwable {
-    return isBadStatus(s, "500");
-  }
+    for (final String day: days) {
+      final AccessDay dayVal = dayValues.get(day);
 
-  private boolean isBadStatus(final String s,
-                              final String status) throws Throwable {
-    final int start = s.indexOf("] \"GET");
+      out();
 
-    if (start < 0) {
-      return false;
+      out1day(day, dayVal);
     }
+  }
 
-    final int endUrl = s.indexOf("\" ", start + 6);
+  private void out1day(final String day,
+                       final AccessDay dayVal) {
+    final List<Map.Entry<String, Integer>> longSorted =
+            Util.sortMap(dayVal.ipCounts);
 
-    if (endUrl < 0) {
-      return false;
+    for (Map.Entry<String, Integer> ent: longSorted) {
+      outFmt("%s\t%d", ent.getKey(), ent.getValue());
     }
-
-    return s.substring(endUrl + 2).startsWith(status + " ");
   }
 
-  private boolean legacyFeeder(final String s) throws Throwable {
-    return s.contains("GET /feeder/")
-            && (s.contains("?calPath=") || s.contains("&calPath="));
+  private void outFmt(final String format, Object... args) {
+    System.out.println(String.format(format, args));
   }
 
-  private void doLegacyFeeder(final String s) throws Throwable {
+  private void doLegacyFeeder(final AccessLogEntry ale) {
     numLegacy++;
 
-    final int start = s.indexOf("GET /feeder/") + 4;
-    final int end = urlEnd(s, start);
-
-    final String urlStr = s.substring(start, end);
-
-    final URI uri = new URI(urlStr);
+    final URI uri;
+    try {
+      uri = new URI(ale.path);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
 
     List<NameValuePair> params = URLEncodedUtils.parse(uri, "UTF-8");
 
@@ -151,39 +225,17 @@ public class AccessLogs {
     }
 
     for (final FeedMatcher m: feedMatchers) {
-      if (m.match(urlStr, params, paramsMap)) {
+      if (m.match(ale.path, params, paramsMap)) {
         m.matched++;
         return;
       }
     }
 
     feederUnknown++;
-    out("Not matched %s", s);
+    out("Not matched %s", ale.path);
   }
 
-  private int urlEnd(final String s, final int start) {
-    int end = s.indexOf(" HTTP/1.1", start);
-
-    if (end < 0) {
-      end = s.indexOf(" HTTP/1.0", start);
-    }
-
-    if (end < 0) {
-      end = s.indexOf("\"", start);
-    }
-
-    if (end < 0) {
-      end = s.length();
-    }
-
-    return end;
-  }
-
-  private boolean webCache(final String s) throws Throwable {
-    return s.contains("GET /webcache/v1.0/");
-  }
-
-  private void doWebCache(final String s) throws Throwable {
+  private void doWebCache(final AccessLogEntry ale) {
     numWebcache++;
 
     /*
@@ -197,35 +249,36 @@ public class AccessLogs {
         /bwObject.json
      */
 
-    final int start = s.indexOf("GET /webcache/v1.0/") + 4;
-    final int end = urlEnd(s, start);
+    final URI uri;
+    try {
+      uri = new URI(ale.path);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
 
-    final String urlStr = s.substring(start, end);
-
-    final URI uri = new URI(urlStr);
     final List<String> ruri = fixPath(uri.getPath());
 
     for (final WebcacheMatcher m: webcacheMatchers) {
-      if (m.match(urlStr, ruri)) {
+      if (m.match(ale.path, ruri)) {
         m.matched++;
         return;
       }
     }
 
     webCacheUnknown++;
-    out("Not matched %s", s);
+    out("Not matched %s", ale.path);
   }
 
-  private List<String> fixPath(final String path) throws Throwable {
+  private List<String> fixPath(final String path) {
     if (path == null) {
       return null;
     }
 
     String decoded;
     try {
-      decoded = URLDecoder.decode(path, "UTF8");
+      decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);
     } catch (Throwable t) {
-      throw new Exception("bad path: " + path);
+      throw new RuntimeException("bad path: " + path);
     }
 
     if (decoded == null) {
@@ -244,24 +297,22 @@ public class AccessLogs {
       decoded = "/" + decoded;
     }
 
-    /** Remove all instances of '//'.
+    /* Remove all instances of '//'.
      */
     while (decoded.contains("//")) {
       decoded = decoded.replaceAll("//", "/");
     }
 
-    /** Somewhere we may have /./ or /../
+    /* Somewhere we may have /./ or /../
      */
 
     final StringTokenizer st = new StringTokenizer(decoded, "/");
 
-    ArrayList<String> al = new ArrayList<String>();
+    ArrayList<String> al = new ArrayList<>();
     while (st.hasMoreTokens()) {
       String s = st.nextToken();
 
-      if (s.equals(".")) {
-        // ignore
-      } else if (s.equals("..")) {
+      if (s.equals("..")) {
         // Back up 1
         if (al.size() == 0) {
           // back too far
@@ -269,7 +320,7 @@ public class AccessLogs {
         }
 
         al.remove(al.size() - 1);
-      } else {
+      } else if (!s.equals(".")) {
         al.add(s);
       }
     }
@@ -611,7 +662,7 @@ public class AccessLogs {
           new FeedPattern10(),
           };
 
-  abstract class FeedMatcher {
+  abstract static class FeedMatcher {
     int matched;
 
     abstract boolean match(final String urlStr,
