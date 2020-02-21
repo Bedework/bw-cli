@@ -107,7 +107,8 @@ public class AccessLogs {
         try {
           ale = AccessLogEntry.fromString(s);
         } catch (final Throwable t) {
-          out("Unable to parse line at %s", lnr.getLineNumber());
+          out("Unable to parse line at %s\n%s",
+              lnr.getLineNumber(), s);
           return false;
         }
 

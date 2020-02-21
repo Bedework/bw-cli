@@ -65,17 +65,26 @@ public class AccessLogEntry {
     }
 
     curPos = end + 1;
-    var methPath = quoted();
-    if (methPath == null) {
+    if (!passQuote()) {
       return null;
     }
 
-    int pos = methPath.indexOf(" ");
-    if (pos > 0) {
-      method = methPath.substring(0, pos);
-      path = methPath.substring(pos + 1);
+    end = blank();
+    if (end < 0) {
+      return null;
     }
 
+    method = req.substring(curPos, end);
+    curPos = end + 1;
+
+    end = req.indexOf(" HTTP/1.1\"", curPos);
+    if (end < 0) {
+      return null;
+    }
+
+    path = req.substring(curPos, end);
+
+    curPos = end + 10;
     end = req.indexOf(" ", curPos);
 
     status = req.substring(curPos, end);
@@ -93,6 +102,29 @@ public class AccessLogEntry {
     userAgent = quoted();
 
     return curPos;
+  }
+
+  private boolean passQuote() {
+    // Advance past quote
+    while (req.charAt(curPos) != '"') {
+      curPos++;
+      if (!posValid()) {
+        return false;
+      }
+    }
+
+    curPos++;
+
+    if (!posValid()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private int blank() {
+    // find blank
+    return req.indexOf(" ", curPos);
   }
 
   private String quoted() {
