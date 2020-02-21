@@ -41,6 +41,7 @@ public class AccessLogs {
 
   public static class AccessPeriod {
     final Map<String, Integer> ipCounts = new HashMap<>();
+    final Map<String, Integer> ip2Counts = new HashMap<>();
     final int periodSeconds;
 
     AccessPeriod(final int periodSeconds) {
@@ -50,6 +51,14 @@ public class AccessLogs {
     void addIp(final String ip) {
       var i = ipCounts.getOrDefault(ip, 0);
       ipCounts.put(ip, i + 1);
+
+      var ip2 = getIp2(ip);
+      if (ip2 == null) {
+        return;
+      }
+
+      i = ip2Counts.getOrDefault(ip2, 0);
+      ip2Counts.put(ip2, i + 1);
     }
 
     int totalRequests() {
@@ -67,6 +76,27 @@ public class AccessLogs {
         var i = ipCounts.getOrDefault(ip, 0);
         ipCounts.put(ip, i + ct);
       }
+
+      for (var ip2: ap.ip2Counts.keySet()) {
+        var ct = ap.ip2Counts.get(ip2);
+
+        var i = ip2Counts.getOrDefault(ip2, 0);
+        ipCounts.put(ip2, i + ct);
+      }
+    }
+
+    String getIp2(final String ip) {
+      var pos = ip.indexOf(".");
+      if (pos < 0) {
+        return null;
+      }
+
+      pos = ip.indexOf(".", pos + 1);
+      if (pos < 0) {
+        return null;
+      }
+
+      return ip.substring(0, pos) + ".*";
     }
   }
 
@@ -208,6 +238,23 @@ public class AccessLogs {
     long total = 0L;
 
     for (Map.Entry<String, Integer> ent: longSorted) {
+      int ct = ent.getValue();
+      total += ct;
+      outFmt("%s\t%d", ent.getKey(), ct);
+    }
+
+    out();
+    out("Total: %s", total);
+
+    out("Ip domain counts for %s", day);
+    out();
+
+    final List<Map.Entry<String, Integer>> long2Sorted =
+            Util.sortMap(dayVal.ip2Counts);
+
+    total = 0L;
+
+    for (Map.Entry<String, Integer> ent: long2Sorted) {
       int ct = ent.getValue();
       total += ct;
       outFmt("%s\t%d", ent.getKey(), ct);
