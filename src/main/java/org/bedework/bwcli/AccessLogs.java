@@ -103,7 +103,13 @@ public class AccessLogs {
           break;
         }
 
-        final AccessLogEntry ale = AccessLogEntry.fromString(s);
+        final AccessLogEntry ale;
+        try {
+          ale = AccessLogEntry.fromString(s);
+        } catch (final Throwable t) {
+          out("Unable to parse line at %s", lnr.getLineNumber());
+          return false;
+        }
 
         if (ale == null) {
           continue;
