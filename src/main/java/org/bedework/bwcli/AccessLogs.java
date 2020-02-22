@@ -240,7 +240,7 @@ public class AccessLogs {
     for (Map.Entry<String, Integer> ent: longSorted) {
       int ct = ent.getValue();
       total += ct;
-      outFmt("%s\t%d", ent.getKey(), ct);
+      outFmt("%-15s\t%d", ent.getKey(), ct);
     }
 
     out();
@@ -257,7 +257,7 @@ public class AccessLogs {
     for (Map.Entry<String, Integer> ent: long2Sorted) {
       int ct = ent.getValue();
       total += ct;
-      outFmt("%s\t%d", ent.getKey(), ct);
+      outFmt("%-15s\t%d", ent.getKey(), ct);
     }
 
     out();
