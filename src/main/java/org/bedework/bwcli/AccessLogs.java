@@ -262,6 +262,16 @@ public class AccessLogs {
 
     out();
     out("Total: %s", total);
+
+    out("Avg requests per minute for each hour:");
+    int i = 0;
+
+    for (final AccessPeriod ap: dayVal.hours) {
+      out("%s-2: %.2f", i, ap.perSecond() * 60);
+      i++;
+    }
+
+    out("Avg requests per minute for day: %.2f", dayVal.perSecond() * 60);
   }
 
   private void outFmt(final String format, Object... args) {

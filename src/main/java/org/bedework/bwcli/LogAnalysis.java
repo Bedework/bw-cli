@@ -277,7 +277,7 @@ public class LogAnalysis {
       lastEntry = null;
       waitcountCount = 1;
     } else if (isUserAgent && (waitcountCount > 0)) {
-      out(">---------------------------- WAITVOUNT = " + waitcountCount);
+      out(">---------------------------- WAITCOUNT = " + waitcountCount);
       waitcountCount = 0;
     }
 
