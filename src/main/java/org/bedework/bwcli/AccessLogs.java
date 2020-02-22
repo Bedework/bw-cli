@@ -267,7 +267,7 @@ public class AccessLogs {
     int i = 0;
 
     for (final AccessPeriod ap: dayVal.hours) {
-      out("%s-2: %.2f", i, ap.perSecond() * 60);
+      out("%2s: %.2f", i, ap.perSecond() * 60);
       i++;
     }
 
