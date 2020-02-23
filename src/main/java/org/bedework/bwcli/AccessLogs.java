@@ -5,6 +5,7 @@ package org.bedework.bwcli;
 
 import org.bedework.bwlogs.AccessDay;
 import org.bedework.bwlogs.AccessLogEntry;
+import org.bedework.bwlogs.AccessTracker;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -20,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class AccessLogs {
   int feederUnknown;
   int webCacheUnknown;
 
-  public static Map<String, AccessDay> dayValues = new HashMap<>();
+  public static AccessTracker accessTracker = new AccessTracker();
 
   public boolean analyze(final String logPathName) {
     try {
@@ -65,9 +65,7 @@ public class AccessLogs {
           continue;
         }
 
-        final AccessDay dayVal =
-                dayValues.computeIfAbsent(ale.normDate, v -> new AccessDay());
-        dayVal.updateFrom(ale);
+        accessTracker.updateFrom(ale);
 
         if (ale.is404()) {
           req404++;
@@ -134,11 +132,8 @@ public class AccessLogs {
     }
     out("Total unknown webcache requests: %d", webCacheUnknown);
 
-    final List<String> days = new ArrayList<>(dayValues.keySet());
-    Collections.sort(days);
-
-    for (final String day: days) {
-      final AccessDay dayVal = dayValues.get(day);
+    for (final String day: accessTracker.getSortedKeys()) {
+      final AccessDay dayVal = accessTracker.getDay(day);
 
       out();
 
