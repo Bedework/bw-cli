@@ -3,8 +3,8 @@
 */
 package org.bedework.bwcli;
 
-import org.bedework.bwcli.logs.AccessLogEntry;
-import org.bedework.util.misc.Util;
+import org.bedework.bwlogs.AccessDay;
+import org.bedework.bwlogs.AccessLogEntry;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -39,87 +39,6 @@ public class AccessLogs {
   int feederUnknown;
   int webCacheUnknown;
 
-  public static class AccessPeriod {
-    final Map<String, Integer> ipCounts = new HashMap<>();
-    final Map<String, Integer> ip2Counts = new HashMap<>();
-    final int periodSeconds;
-
-    AccessPeriod(final int periodSeconds) {
-      this.periodSeconds = periodSeconds;
-    }
-
-    void addIp(final String ip) {
-      var i = ipCounts.getOrDefault(ip, 0);
-      ipCounts.put(ip, i + 1);
-
-      var ip2 = getIp2(ip);
-      if (ip2 == null) {
-        return;
-      }
-
-      i = ip2Counts.getOrDefault(ip2, 0);
-      ip2Counts.put(ip2, i + 1);
-    }
-
-    int totalRequests() {
-      return ipCounts.values().stream().mapToInt(Number::intValue).sum();
-    }
-
-    float perSecond() {
-      return (float)totalRequests() / periodSeconds;
-    }
-
-    void add(final AccessPeriod ap) {
-      for (var ip: ap.ipCounts.keySet()) {
-        var ct = ap.ipCounts.get(ip);
-
-        var i = ipCounts.getOrDefault(ip, 0);
-        ipCounts.put(ip, i + ct);
-      }
-
-      for (var ip2: ap.ip2Counts.keySet()) {
-        var ct = ap.ip2Counts.get(ip2);
-
-        var i = ip2Counts.getOrDefault(ip2, 0);
-        ipCounts.put(ip2, i + ct);
-      }
-    }
-
-    String getIp2(final String ip) {
-      var pos = ip.indexOf(".");
-      if (pos < 0) {
-        return null;
-      }
-
-      pos = ip.indexOf(".", pos + 1);
-      if (pos < 0) {
-        return null;
-      }
-
-      return ip.substring(0, pos) + ".*";
-    }
-  }
-
-  final static int hourSecs = 60 * 60;
-
-  public static class AccessDay extends AccessPeriod {
-    final AccessPeriod[] hours = new AccessPeriod[24];
-
-    AccessDay() {
-      super(hourSecs * 24);
-
-      for (int i = 0; i <= 23; i++) {
-        hours[i] = new AccessPeriod(hourSecs);
-      }
-    }
-
-    void addIp(final String ip,
-               final int hour) {
-      hours[hour].addIp(ip);
-      addIp(ip);
-    }
-  }
-
   public static Map<String, AccessDay> dayValues = new HashMap<>();
 
   public boolean analyze(final String logPathName) {
@@ -148,7 +67,7 @@ public class AccessLogs {
 
         final AccessDay dayVal =
                 dayValues.computeIfAbsent(ale.normDate, v -> new AccessDay());
-        dayVal.addIp(ale.ip, ale.hourOfDay);
+        dayVal.updateFrom(ale);
 
         if (ale.is404()) {
           req404++;
@@ -233,7 +152,7 @@ public class AccessLogs {
     out();
 
     final List<Map.Entry<String, Integer>> longSorted =
-            Util.sortMap(dayVal.ipCounts);
+            dayVal.getSortedIpCounts();
 
     long total = 0L;
 
@@ -250,7 +169,7 @@ public class AccessLogs {
     out();
 
     final List<Map.Entry<String, Integer>> long2Sorted =
-            Util.sortMap(dayVal.ip2Counts);
+            dayVal.getSortedIp2Counts();
 
     total = 0L;
 
@@ -264,11 +183,8 @@ public class AccessLogs {
     out("Total: %s", total);
 
     out("Avg requests per minute for each hour:");
-    int i = 0;
-
-    for (final AccessPeriod ap: dayVal.hours) {
-      out("%2s: %.2f", i, ap.perSecond() * 60);
-      i++;
+    for (int i = 0; i <= 23; i++) {
+      out("%2s: %.2f", i, dayVal.getHour(i).perSecond() * 60);
     }
 
     out("Avg requests per minute for day: %.2f", dayVal.perSecond() * 60);
@@ -412,7 +328,7 @@ public class AccessLogs {
          fexpr=%28catuid%3D%272962aca4-289343b8-0128-98411c36-0000001e%27%29
          days=30
    */
-  private class FeedPattern1 extends FeedMatcher {
+  private static class FeedPattern1 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -446,7 +362,7 @@ public class AccessLogs {
          setappvar=summaryMode(details)
          days=1
    */
-  private class FeedPattern2 extends FeedMatcher {
+  private static class FeedPattern2 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -462,12 +378,8 @@ public class AccessLogs {
         return false;
       }
 
-      if (!checkParVal(paramsMap.get("skinName").get(0),
-                       "list-rss", "list-json", "default")) {
-        return false;
-      }
-
-      return true;
+      return checkParVal(paramsMap.get("skinName").get(0),
+                         "list-rss", "list-json", "default");
     }
   }
 
@@ -480,7 +392,7 @@ public class AccessLogs {
         fexpr=%28catuid%3D%27ff808181-1fd7389e-011f-d7389f4b-00000018%27%29
         days=20
    */
-  private class FeedPattern3 extends FeedMatcher {
+  private static class FeedPattern3 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -512,7 +424,7 @@ public class AccessLogs {
         calPath=%2Fpublic%2Fcals%2FMainCal
         skinName=list-rss
    */
-  private class FeedPattern4 extends FeedMatcher {
+  private static class FeedPattern4 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -526,12 +438,8 @@ public class AccessLogs {
         return false;
       }
 
-      if (!checkParVal(paramsMap.get("skinName").get(0),
-                       "list-rss")) {
-        return false;
-      }
-
-      return true;
+      return checkParVal(paramsMap.get("skinName").get(0),
+                         "list-rss");
     }
   }
 
@@ -544,7 +452,7 @@ public class AccessLogs {
         setappvar=objName(bwObject)
         days=1
    */
-  private class FeedPattern5 extends FeedMatcher {
+  private static class FeedPattern5 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -560,12 +468,8 @@ public class AccessLogs {
         return false;
       }
 
-      if (!checkParVal(paramsMap.get("skinName").get(0),
-                       "list-json")) {
-        return false;
-      }
-
-      return true;
+      return checkParVal(paramsMap.get("skinName").get(0),
+                         "list-json");
     }
   }
 
@@ -578,7 +482,7 @@ public class AccessLogs {
         fexpr=%28catuid%3D%272962ac9d-4b262989-014b-26e8a64a-00007157%27%29
         days=7
    */
-  private class FeedPattern6 extends FeedMatcher {
+  private static class FeedPattern6 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -607,7 +511,7 @@ public class AccessLogs {
         setappvar=summaryMode(details)
         days=7
    */
-  private class FeedPattern7 extends FeedMatcher {
+  private static class FeedPattern7 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -616,14 +520,10 @@ public class AccessLogs {
         return false;
       }
 
-      if (!checkParam(paramsMap, "calPath", 1) ||
-              !checkParam(paramsMap, "format", 1) ||
-              !checkParam(paramsMap, "setappvar", 1) ||
-              !checkParam(paramsMap, "days", 1)) {
-        return false;
-      }
-
-      return true;
+      return checkParam(paramsMap, "calPath", 1) &&
+              checkParam(paramsMap, "format", 1) &&
+              checkParam(paramsMap, "setappvar", 1) &&
+              checkParam(paramsMap, "days", 1);
     }
   }
 
@@ -634,7 +534,7 @@ public class AccessLogs {
         setappvar=objName(catsObj)
         calPath=/public/cals/MainCal
    */
-  private class FeedPattern8 extends FeedMatcher {
+  private static class FeedPattern8 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -664,7 +564,7 @@ public class AccessLogs {
         start=2019-03-04
         end=2020-03-04
    */
-  private class FeedPattern9 extends FeedMatcher {
+  private static class FeedPattern9 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -700,7 +600,7 @@ public class AccessLogs {
         start=2019-03-04
         end=2020-03-04
    */
-  private class FeedPattern10 extends FeedMatcher {
+  private static class FeedPattern10 extends FeedMatcher {
     boolean match(final String urlStr,
                   final List<NameValuePair> params,
                   final Map<String, List<String>> paramsMap) {
@@ -785,7 +685,7 @@ public class AccessLogs {
     }
   }
 
-  private class WebcachePattern1 extends WebcacheMatcher {
+  private static class WebcachePattern1 extends WebcacheMatcher {
     boolean match(final String urlStr,
                   final List<String> ruri) {
       if (ruri.size() != 7) {
@@ -821,16 +721,12 @@ public class AccessLogs {
         return false;
       }
 
-      if (!"bwObject.json".equals(ruri.get(6)) &&
-              !"no--object.json".equals(ruri.get(6))) {
-        return false;
-      }
-
-      return true;
+      return "bwObject.json".equals(ruri.get(6)) ||
+              "no--object.json".equals(ruri.get(6));
     }
   }
 
-  private class WebcachePattern2 extends WebcacheMatcher {
+  private static class WebcachePattern2 extends WebcacheMatcher {
     boolean match(final String urlStr,
                   final List<String> ruri) {
       if (ruri.size() != 6) {
@@ -863,17 +759,13 @@ public class AccessLogs {
 
       final String fexpr = ruri.get(5);
 
-      if (!"no--filter.rss".equals(fexpr) &&
-              !"no--filter.xml".equals(fexpr) &&
-              !onlyCatUids(fexpr)) {
-        return false;
-      }
-
-      return true;
+      return "no--filter.rss".equals(fexpr) ||
+              "no--filter.xml".equals(fexpr) ||
+              onlyCatUids(fexpr);
     }
   }
 
-  private class WebcachePattern3 extends WebcacheMatcher {
+  private static class WebcachePattern3 extends WebcacheMatcher {
     boolean match(final String urlStr,
                   final List<String> ruri) {
       if (ruri.size() != 5) {
@@ -898,16 +790,12 @@ public class AccessLogs {
 
       final String fexpr = ruri.get(4);
 
-      if (!"no--filter.ics".equals(fexpr) &&
-              !onlyCatUids(fexpr)) {
-        return false;
-      }
-
-      return true;
+      return "no--filter.ics".equals(fexpr) ||
+              onlyCatUids(fexpr);
     }
   }
 
-  private class WebcachePattern4 extends WebcacheMatcher {
+  private static class WebcachePattern4 extends WebcacheMatcher {
     boolean match(final String urlStr,
                   final List<String> ruri) {
       if (ruri.size() != 5) {
@@ -930,16 +818,11 @@ public class AccessLogs {
         return false;
       }
 
-
-      if (!"catsObj.json".equals(ruri.get(4))) {
-        return false;
-      }
-
-      return true;
+      return "catsObj.json".equals(ruri.get(4));
     }
   }
 
-  private class WebcachePattern5 extends WebcacheMatcher {
+  private static class WebcachePattern5 extends WebcacheMatcher {
     boolean match(final String urlStr,
                   final List<String> ruri) {
       if (ruri.size() != 9) {
@@ -981,11 +864,7 @@ public class AccessLogs {
         return false;
       }
 
-      if (!isInt(ruri.get(8))) {
-        return false;
-      }
-
-      return true;
+      return isInt(ruri.get(8));
     }
   }
 
@@ -996,7 +875,7 @@ public class AccessLogs {
           new WebcachePattern4(),
   };
 
-  abstract class WebcacheMatcher {
+  static abstract class WebcacheMatcher {
     int matched;
 
     abstract boolean match(final String urlStr,
@@ -1004,7 +883,6 @@ public class AccessLogs {
 
     boolean isInt(final String s) {
       try {
-        //noinspection ResultOfMethodCallIgnored
         Integer.valueOf(s);
         return true;
       } catch (final Throwable ignored) {
@@ -1013,7 +891,7 @@ public class AccessLogs {
     }
   }
 
-  boolean onlyCatUids(final String fexpr) {
+  static boolean onlyCatUids(final String fexpr) {
       /*
     fexpr=(catuid='2962ac9d-4b307640-014b-32408a42-000054fa')&
     (catuid!='2962ac9d-2a425309-012a-43b52f6f-00000304'&catuid!='2962aca4-289343b8-0128-9420e1a5-00000007'&catuid!='2962aca4-289343b8-0128-9420505d-00000006')
