@@ -106,10 +106,10 @@ public class LogAnalysis {
 
   final Map<String, ContextInfo> contexts = new HashMap<>();
 
-  public boolean process(final String logPathName,
-                         final boolean showLong,
-                         final boolean showMissingTaskIds,
-                         final boolean summariseTests) {
+  public void process(final String logPathName,
+                      final boolean showLong,
+                      final boolean showMissingTaskIds,
+                      final boolean summariseTests) {
     this.showLong = showLong;
     this.showMissingTaskIds = showMissingTaskIds;
     this.summariseTests = summariseTests;
@@ -147,15 +147,12 @@ public class LogAnalysis {
           doSummariseTests(s);
         }
 
-        tryErrorLine(s);
+        checkErrorLine(s);
       }
 
       results();
-
-      return true;
     } catch (final Throwable t) {
       t.printStackTrace();
-      return false;
     }
   }
 
@@ -222,8 +219,7 @@ public class LogAnalysis {
       }
 
       final long reqMillis = rs.millis - mapRs.millis;
-
-      ContextInfo ci =
+      final ContextInfo ci =
               contexts.computeIfAbsent(mapRs.context,
                                        k -> new ContextInfo(mapRs.context));
 
@@ -264,8 +260,8 @@ public class LogAnalysis {
 
     final var testUserAgentLabel = "User-Agent = \"Cal-Tester: ";
     final var isUserAgent = s.contains("User-Agent = \"");
-    var isCalTest = s.contains(testUserAgentLabel);
-    var isWaitcount = isCalTest && s.contains("WAITCOUNT ");
+    final var isCalTest = s.contains(testUserAgentLabel);
+    final var isWaitcount = isCalTest && s.contains("WAITCOUNT ");
 
     if (isWaitcount) {
       //
@@ -288,7 +284,7 @@ public class LogAnalysis {
     if (s.contains(" User-Agent = \"")) {
       outSummary(lastReqline);
       outSummary(lastEntry);
-      var pos = le.logText.indexOf(testUserAgentLabel);
+      final var pos = le.logText.indexOf(testUserAgentLabel);
       if (pos >= 0) {
         le.logText = "------------- Test ---> " +
                 le.logText.substring(0, pos) +
@@ -340,7 +336,7 @@ public class LogAnalysis {
   }
 
   private void outSchedSummary(final LogEntry le) {
-    var s = le.logText;
+    final var s = le.logText;
 
     if (s.contains("set event to")) {
       outSummary(le);
@@ -376,8 +372,9 @@ public class LogAnalysis {
     }
 
     final ReqInOutLogEntry rs = new ReqInOutLogEntry();
+    final Integer res = rs.parse(ln, reqName);
 
-    if (rs.parse(ln, reqName) < 0) {
+    if ((res == null) || (res < 0)) {
       return null;
     }
 
@@ -392,14 +389,12 @@ public class LogAnalysis {
     return ln.indexOf(" DEBUG ") == 23;
   }
 
-  private boolean tryErrorLine(final String ln) {
+  private void checkErrorLine(final String ln) {
     if (ln.indexOf(" ERROR ") != 23) {
-      return false;
+      return;
     }
 
     errorLines++;
-
-    return true;
   }
 
   private void results() {
@@ -504,7 +499,7 @@ public class LogAnalysis {
     final List<Map.Entry<String, Integer>> sorted =
             Util.sortMap(ReqInOutLogEntry.ipMap);
     int ct = 0;
-    for (Map.Entry<String, Integer> ent: sorted) {
+    for (final Map.Entry<String, Integer> ent: sorted) {
       outFmt("%s\t%d", ent.getKey(), ent.getValue());
       ct++;
 
@@ -520,7 +515,7 @@ public class LogAnalysis {
     final List<Map.Entry<String, Integer>> longSorted =
             Util.sortMap(longreqIpMap);
     ct = 0;
-    for (Map.Entry<String, Integer> ent: longSorted) {
+    for (final Map.Entry<String, Integer> ent: longSorted) {
       outFmt("%s\t%d", ent.getKey(), ent.getValue());
       ct++;
 
@@ -530,7 +525,8 @@ public class LogAnalysis {
     }
   }
 
-  private void outFmt(final String format, Object... args) {
+  private void outFmt(final String format,
+                      final Object... args) {
     System.out.println(String.format(format, args));
   }
 
@@ -538,9 +534,10 @@ public class LogAnalysis {
     System.out.println(val);
   }
 
-  private void error(final String format, Object... args) {
+/*  private void error(final String format,
+                     final Object... args) {
     System.out.println(String.format(format, args));
-  }
+  }*/
 
   private void out() {
     System.out.println();
