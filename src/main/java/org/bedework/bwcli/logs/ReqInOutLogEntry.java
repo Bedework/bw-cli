@@ -40,8 +40,16 @@ public class ReqInOutLogEntry extends LogEntry {
   String xForwardedFor;
 
   public Integer parse(final String req,
-                       final String logName) {
-    if (super.parse(req, logName, "INFO") == null) {
+                       final boolean in) {
+    final String logName;
+    if (in) {
+      logName = "REQUEST";
+    } else {
+      logName = "REQUEST-OUT";
+    }
+
+    if (!req.contains(" " + logName + ":") ||
+            (super.parse(req, logName, "INFO") == null)) {
       return null;
     }
 
@@ -92,10 +100,12 @@ public class ReqInOutLogEntry extends LogEntry {
       ip = xForwardedFor;
     }
 
-    int ct = ipMap.computeIfAbsent(ip, k -> 0);
+    if (in) {
+      int ct = ipMap.computeIfAbsent(ip, k -> 0);
 
-    ct = ct + 1;
-    ipMap.put(ip, ct);
+      ct = ct + 1;
+      ipMap.put(ip, ct);
+    }
 
     // Parse out the url
     int urlPos = 10; // safely past the "//"

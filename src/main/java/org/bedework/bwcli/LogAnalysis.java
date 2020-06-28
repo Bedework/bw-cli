@@ -358,21 +358,17 @@ public class LogAnalysis {
   }
 
   private ReqInOutLogEntry tryRequestLine(final String ln) {
-    return tryRequestInOutLine(ln, "REQUEST");
+    return tryRequestInOutLine(ln, true);
   }
 
   private ReqInOutLogEntry tryRequestOut(final String ln) {
-    return tryRequestInOutLine(ln, "REQUEST-OUT");
+    return tryRequestInOutLine(ln, false);
   }
 
   private ReqInOutLogEntry tryRequestInOutLine(final String ln,
-                                               final String reqName) {
-    if (!ln.contains(" " + reqName + ":")) {
-      return null;
-    }
-
+                                               final boolean in) {
     final ReqInOutLogEntry rs = new ReqInOutLogEntry();
-    final Integer res = rs.parse(ln, reqName);
+    final Integer res = rs.parse(ln, in);
 
     if ((res == null) || (res < 0)) {
       return null;

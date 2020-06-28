@@ -120,18 +120,18 @@ public class LogEntry {
       return null;
     }
 
-    var res = ln.substring(taskIdPos, curPos);
+    final var res = ln.substring(taskIdPos, curPos);
 
     curPos++;
 
     return res;
   }
 
-  protected void error(final String format, Object... args) {
+  protected void error(final String format, final Object... args) {
     System.out.println(String.format(format, args));
   }
 
-  protected void out(final String format, Object... args) {
+  protected void out(final String format, final Object... args) {
     System.out.println(String.format(format, args));
   }
 

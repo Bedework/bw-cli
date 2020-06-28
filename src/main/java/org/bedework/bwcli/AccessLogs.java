@@ -105,7 +105,7 @@ public class AccessLogs {
 
       return new LineNumberReader(new FileReader(logFile));
     } catch (final FileNotFoundException fnfe) {
-      var msg = "No such file: " + logPathName;
+      final var msg = "No such file: " + logPathName;
       out(msg);
       throw new RuntimeException(msg);
     }
@@ -151,8 +151,8 @@ public class AccessLogs {
 
     long total = 0L;
 
-    for (Map.Entry<String, Integer> ent: longSorted) {
-      int ct = ent.getValue();
+    for (final Map.Entry<String, Integer> ent: longSorted) {
+      final int ct = ent.getValue();
       total += ct;
       outFmt("%-15s\t%d", ent.getKey(), ct);
     }
@@ -168,8 +168,8 @@ public class AccessLogs {
 
     total = 0L;
 
-    for (Map.Entry<String, Integer> ent: long2Sorted) {
-      int ct = ent.getValue();
+    for (final Map.Entry<String, Integer> ent: long2Sorted) {
+      final int ct = ent.getValue();
       total += ct;
       outFmt("%-15s\t%d", ent.getKey(), ct);
     }
@@ -185,7 +185,8 @@ public class AccessLogs {
     out("Avg requests per minute for day: %.2f", dayVal.perSecond() * 60);
   }
 
-  private void outFmt(final String format, Object... args) {
+  private void outFmt(final String format,
+                      final Object... args) {
     System.out.println(String.format(format, args));
   }
 
@@ -195,15 +196,16 @@ public class AccessLogs {
     final URI uri;
     try {
       uri = new URI(ale.path);
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }
 
-    List<NameValuePair> params = URLEncodedUtils.parse(uri, "UTF-8");
+    final List<NameValuePair> params =
+            URLEncodedUtils.parse(uri, "UTF-8");
 
     final Map<String, List<String>> paramsMap = new HashMap<>();
 
-    for (NameValuePair param : params) {
+    for (final NameValuePair param : params) {
       paramsMap.computeIfAbsent(param.getName(),
                                 k -> new ArrayList<>())
                .add(param.getValue());
@@ -237,7 +239,7 @@ public class AccessLogs {
     final URI uri;
     try {
       uri = new URI(ale.path);
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }
 
@@ -262,7 +264,7 @@ public class AccessLogs {
     String decoded;
     try {
       decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       throw new RuntimeException("bad path: " + path);
     }
 
@@ -293,9 +295,9 @@ public class AccessLogs {
 
     final StringTokenizer st = new StringTokenizer(decoded, "/");
 
-    ArrayList<String> al = new ArrayList<>();
+    final ArrayList<String> al = new ArrayList<>();
     while (st.hasMoreTokens()) {
-      String s = st.nextToken();
+      final String s = st.nextToken();
 
       if (s.equals("..")) {
         // Back up 1
@@ -618,7 +620,7 @@ public class AccessLogs {
     }
   }
 
-  private FeedMatcher[] feedMatchers = {
+  private final static FeedMatcher[] feedMatchers = {
           new FeedPattern1(),
           new FeedPattern2(),
           new FeedPattern3(),
@@ -634,9 +636,9 @@ public class AccessLogs {
   abstract static class FeedMatcher {
     int matched;
 
-    abstract boolean match(final String urlStr,
-                           final List<NameValuePair> params,
-                           final Map<String, List<String>> paramsMap);
+    abstract boolean match(String urlStr,
+                           List<NameValuePair> params,
+                           Map<String, List<String>> paramsMap);
 
     boolean check(final String urlStr,
                   final String expectedUrlStr,
@@ -863,7 +865,7 @@ public class AccessLogs {
     }
   }
 
-  private WebcacheMatcher[] webcacheMatchers = {
+  private final static WebcacheMatcher[] webcacheMatchers = {
           new WebcachePattern1(),
           new WebcachePattern2(),
           new WebcachePattern3(),
@@ -873,8 +875,8 @@ public class AccessLogs {
   static abstract class WebcacheMatcher {
     int matched;
 
-    abstract boolean match(final String urlStr,
-                           final List<String> ruri);
+    abstract boolean match(String urlStr,
+                           List<String> ruri);
 
     boolean isInt(final String s) {
       try {
@@ -906,7 +908,7 @@ public class AccessLogs {
     return true;
   }
 
-  private void out(final String format, Object... args) {
+  private void out(final String format, final Object... args) {
     System.out.println(String.format(format, args));
   }
 
