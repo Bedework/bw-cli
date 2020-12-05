@@ -244,7 +244,7 @@ public class BwCli extends JolokiaCli {
 
       try {
         cl = new HttpClient(new URI(url));
-      } catch (Throwable t) {
+      } catch (final Throwable t) {
         throw new RuntimeException(t);
       }
 
