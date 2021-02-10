@@ -23,7 +23,7 @@
     <bw-util-network.version>4.1.0</bw-util-network.version>
 
     <!-- Third Party Library Versions -->
-    <commons-codec.version>1.5</commons-codec.version>
+    <commons-codec.version>1.15</commons-codec.version>
     <http-client.version>4.5.3</http-client.version>
     <http-core.version>4.4.8</http-core.version>
     <jackson.version>2.10.0</jackson.version>
