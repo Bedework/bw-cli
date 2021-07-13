@@ -171,7 +171,7 @@ public class JolokiaConfigClient extends JolokiaClient {
 
   public Integer getAutoKillMinutes() throws Throwable {
     final String s = readString(systemMbean, "AutoKillMinutes");
-    return new Integer(s);
+    return Integer.valueOf(s);
   }
 
   /* ----------- sync engine ----------------- */
@@ -246,6 +246,15 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   /* ----------- timezone server ----------------- */
+
+  public String getTzAttr(final String attrName) throws Throwable {
+    return readString(tzsvrMbean, attrName);
+  }
+
+  public void setTzAttr(final String attrName,
+                        final String val) throws Throwable {
+    writeVal(tzsvrMbean, attrName, val);
+  }
 
   public String tzRefreshData() throws Throwable {
     return execString(tzsvrMbean, "refreshData");
