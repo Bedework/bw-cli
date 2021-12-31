@@ -14,18 +14,7 @@ public class CmdEventregSchema extends JmxCmd {
   }
 
   public void doExecute() throws Throwable {
-    final String exportKey = cli.word("[no]export");
-
-    final boolean export;
-    if ("export".equals(exportKey)) {
-      export = true;
-    } else if ("noexport".equals(exportKey)) {
-      export = false;
-    } else {
-      cli.error("Expected 'export' or 'noexport'");
-      return;
-    }
-
-    multiLine(jcc.eventregSchema(export));
+    multiLine(jcc.eventregSchema(cli.nextIs("export"),
+                                 cli.optionalKeyString("out")));
   }
 }

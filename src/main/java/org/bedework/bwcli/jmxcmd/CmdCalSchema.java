@@ -10,10 +10,11 @@ package org.bedework.bwcli.jmxcmd;
  */
 public class CmdCalSchema extends JmxCmd {
   public CmdCalSchema() {
-    super("calschema", null, "Create the calendar core schema");
+    super("calschema", "[export]", "Create the calendar core schema");
   }
 
   public void doExecute() throws Throwable {
-    multiLine(jcc.coreSchema());
+    multiLine(jcc.coreSchema(cli.nextIs("export"),
+                             cli.optionalKeyString("out")));
   }
 }

@@ -24,7 +24,7 @@ public class CmdSync extends JmxCmd {
   public void doExecute() throws Throwable {
     final String wd = cli.word("schemaWd");
 
-    boolean get = "get".equals(wd);
+    final boolean get = "get".equals(wd);
 
     final String attrCmd;
 
@@ -40,7 +40,8 @@ public class CmdSync extends JmxCmd {
     }
 
     if ("schema".equals(attrCmd)) {
-      multiLine(jcc.syncSchema());
+      multiLine(jcc.syncSchema(cli.nextIs("export"),
+                               cli.optionalKeyString("out")));
       return;
     }
 

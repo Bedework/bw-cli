@@ -14,6 +14,7 @@ public class CmdSelfregSchema extends JmxCmd {
   }
 
   public void doExecute() throws Throwable {
-    multiLine(jcc.selfregSchema());
+    multiLine(jcc.selfregSchema(cli.nextIs("export"),
+                                cli.optionalKeyString("out")));
   }
 }

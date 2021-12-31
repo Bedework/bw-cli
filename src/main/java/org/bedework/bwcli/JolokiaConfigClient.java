@@ -65,8 +65,9 @@ public class JolokiaConfigClient extends JolokiaClient {
     return execString(cmdutilMbean, "exec", cmd);
   }
 
-  public List<String> coreSchema() throws Throwable {
-    return doSchema(dbConfMbean, true);
+  public List<String> coreSchema(final boolean export,
+                                 final String out) throws Throwable {
+    return doSchema(dbConfMbean, export, out);
   }
 
   public String listIndexes() throws Throwable {
@@ -185,8 +186,9 @@ public class JolokiaConfigClient extends JolokiaClient {
     writeVal(syncEngineMbean, attrName, val);
   }
 
-  public List<String> syncSchema() throws Throwable {
-    return doSchema(syncEngineMbean, true);
+  public List<String> syncSchema(final boolean export,
+                                 final String out) throws Throwable {
+    return doSchema(syncEngineMbean, export, out);
   }
 
   public void syncStart() throws Throwable {
@@ -216,14 +218,16 @@ public class JolokiaConfigClient extends JolokiaClient {
                       account, first, last, email, pw);
   }
 
-  public List<String> selfregSchema() throws Throwable {
-    return doSchema(selfregMbean, true);
+  public List<String> selfregSchema(final boolean export,
+                                    final String out) throws Throwable {
+    return doSchema(selfregMbean, export, out);
   }
 
   /* ----------- selfreg ----------------- */
 
-  public List<String> eventregSchema(final boolean export) throws Throwable {
-    return doSchema(eventregMbean, export);
+  public List<String> eventregSchema(final boolean export,
+                                     final String out) throws Throwable {
+    return doSchema(eventregMbean, export, out);
   }
 
   /* ----------- generic ----------------- */
@@ -235,8 +239,13 @@ public class JolokiaConfigClient extends JolokiaClient {
   }
 
   public List<String> doSchema(final String mbean,
-                               final boolean export) throws Throwable {
+                               final boolean export,
+                               final String out) throws Throwable {
     writeVal(mbean, "Export", String.valueOf(export));
+
+    if (out != null) {
+      writeVal(mbean, "SchemaOutFile", out);
+    }
 
     execute(mbean, "schema");
 
