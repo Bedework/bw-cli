@@ -36,6 +36,9 @@ import static org.bedework.bwcli.copiedCalFacade.Configurations.systemMbean;
  * User: mike Date: 12/3/15 Time: 00:32
  */
 public class JolokiaConfigClient extends JolokiaClient {
+  private final static String carddavUserDirMbean =
+          "org.bedework.carddav:service=CardDav,Type=dirhandler,Name=user-dirHandler";
+
   private final static String syncEngineMbean =
           "org.bedework.synch:service=SynchConf";
 
@@ -207,6 +210,13 @@ public class JolokiaConfigClient extends JolokiaClient {
     writeVal(syncEngineMbean, "PrivKeys", val);
   }
 
+  /* ----------- carddav ----------------- */
+
+  public List<String> carddavSchema(final boolean export,
+                                    final String out) throws Throwable {
+    return doSchema(carddavUserDirMbean, export, out);
+  }
+
   /* ----------- selfreg ----------------- */
 
   public String selfregAddUser(final String account,
@@ -223,7 +233,7 @@ public class JolokiaConfigClient extends JolokiaClient {
     return doSchema(selfregMbean, export, out);
   }
 
-  /* ----------- selfreg ----------------- */
+  /* ----------- eventreg ----------------- */
 
   public List<String> eventregSchema(final boolean export,
                                      final String out) throws Throwable {
