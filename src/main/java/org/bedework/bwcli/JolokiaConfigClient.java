@@ -39,6 +39,9 @@ public class JolokiaConfigClient extends JolokiaClient {
   private final static String carddavUserDirMbean =
           "org.bedework.carddav:service=CardDav,Type=dirhandler,Name=user-dirHandler";
 
+  private final static String notifierMbean =
+          "org.bedework.notify:service=Notify,Type=notifyConf,Name=notifyConf";
+
   private final static String syncEngineMbean =
           "org.bedework.synch:service=SynchConf";
 
@@ -215,6 +218,13 @@ public class JolokiaConfigClient extends JolokiaClient {
   public List<String> carddavSchema(final boolean export,
                                     final String out) throws Throwable {
     return doSchema(carddavUserDirMbean, export, out);
+  }
+
+  /* ----------- notifier ----------------- */
+
+  public List<String> notifierSchema(final boolean export,
+                                     final String out) throws Throwable {
+    return doSchema(notifierMbean, export, out);
   }
 
   /* ----------- selfreg ----------------- */

@@ -14,6 +14,7 @@ import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
 import org.bedework.bwcli.jmxcmd.CmdListIdx;
 import org.bedework.bwcli.jmxcmd.CmdMakeIdxProd;
 import org.bedework.bwcli.jmxcmd.CmdNewidx;
+import org.bedework.bwcli.jmxcmd.CmdNotifierSchema;
 import org.bedework.bwcli.jmxcmd.CmdPurgeIdx;
 import org.bedework.bwcli.jmxcmd.CmdRebuildIdx;
 import org.bedework.bwcli.jmxcmd.CmdRebuildStatus;
@@ -72,6 +73,7 @@ public class BwCli extends JolokiaCli {
     register(new CmdListIdx());
     register(new CmdMakeIdxProd());
     register(new CmdNewidx());
+    register(new CmdNotifierSchema());
     register(new CmdPurgeIdx());
     register(new CmdRebuildIdx());
     register(new CmdRebuildStatus());
