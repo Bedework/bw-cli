@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.bedework</groupId>
     <artifactId>bedework-parent</artifactId>
-    <version>1-SNAPSHOT</version>
+    <version>7</version>
   </parent>
 
   <artifactId>bw-cli</artifactId>
-  <version>5.0.0-SNAPSHOT</version>
+  <version>5.0.0</version>
   <name>Bedework: CLI</name>
   <description>A command line client for bedework system admin</description>
   <url>https://github.com/Bedework/bw-cli</url>
