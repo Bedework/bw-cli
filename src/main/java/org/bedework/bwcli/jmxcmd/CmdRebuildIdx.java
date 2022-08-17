@@ -14,7 +14,7 @@ public class CmdRebuildIdx extends JmxCmd {
   }
 
   public void doExecute() throws Throwable {
-    String type = cli.word(null);
+    final String type = cli.word(null);
 
     if (type == null) {
       multiLine(jcc.rebuildIndexes());
