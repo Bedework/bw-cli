@@ -44,6 +44,10 @@ public abstract class LogReader {
 
   public abstract void processInfo(final ReqInOutLogEntry rs);
 
+  public void requestOut(final ReqInOutLogEntry rsin,
+                         final ReqInOutLogEntry rsout) {
+  }
+
   public abstract void results();
 
   public void process(final String logPathName,
@@ -157,6 +161,8 @@ public abstract class LogReader {
       if (rs.hasJsessionid()) {
         ci.sessions++;
       }
+
+      requestOut(mapRs, rs);
 
       // Done with the entry
       tasks.remove(rs.taskId);

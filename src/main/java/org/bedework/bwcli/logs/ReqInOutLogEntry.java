@@ -9,6 +9,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,13 @@ public class ReqInOutLogEntry extends LogEntry {
 
   String referer;
   String xForwardedFor;
+
+  public List<LogEntry> entries = new ArrayList<>();
+  public boolean skipping;
+  public String user;
+  public String uri;
+  public String sessid;
+  public String handlerClass;
 
   public Integer parse(final String req,
                        final boolean in) {
@@ -148,6 +156,10 @@ public class ReqInOutLogEntry extends LogEntry {
     }
 
     return curPos;
+  }
+
+  public void addLogEntry(final LogEntry val) {
+    entries.add(val);
   }
 
   public boolean sameTask(final ReqInOutLogEntry otherEntry) {

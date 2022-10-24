@@ -141,6 +141,9 @@ public class BwCli extends JolokiaCli {
     String cmd = null;
     String cmdFile = null;
     String jmxUrl = null;
+    String sessionId = null;
+    String sessionUser = null;
+    boolean skipAnon = false;
     boolean logShowLong = false;
     boolean logShowMissingTaskIds = false;
     boolean debug = false;
@@ -174,6 +177,30 @@ public class BwCli extends JolokiaCli {
           new LogAnalysis().process(pargs.next(), logShowLong,
                                     logShowMissingTaskIds);
           return;  // Always 1 shot
+        }
+
+        if (pargs.ifMatch("sessions")) {
+          new DisplaySessions(sessionId,
+                              sessionUser,
+                              skipAnon).
+                  process(pargs.next(), logShowLong,
+                          logShowMissingTaskIds);
+          return;  // Always 1 shot
+        }
+
+        if (pargs.ifMatch("skipAnon")) {
+          skipAnon = true;
+          continue;
+        }
+
+        if (pargs.ifMatch("sessionId")) {
+          sessionId = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("sessionUser")) {
+          sessionUser = pargs.next();
+          continue;
         }
 
         if (pargs.ifMatch("access")) {

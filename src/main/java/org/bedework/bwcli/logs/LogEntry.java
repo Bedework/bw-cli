@@ -19,10 +19,19 @@ public class LogEntry {
   public long sinceLastMillis;
   public long sinceStartMillis;
   public String dt;
+  public String level;
+  public String className;
   public String taskId;
   public String logText;
 
+  public boolean unparsed;
+
   String logName;
+
+  public void unparsed(final String req) {
+    unparsed = true;
+    logText = req;
+  }
 
   /**
    * @param req log entry
@@ -31,49 +40,65 @@ public class LogEntry {
   public Integer parse(final String req,
                        final String logName,
                        final String logLevel) {
-    this.req = req;
-    this.logName = logName;
-    dt = req.substring(0, req.indexOf(" " + logLevel));
-    millis = millis();
-    if (millis == null) {
-      error("Unable to get millis for %s", req);
-      return null;
-    }
+    try {
+      this.req = req;
+      this.logName = logName;
 
-    if (startMillis != 0) {
-      sinceLastMillis = millis - lastMillis;
-      sinceStartMillis = millis - startMillis;
-    } else {
-      startMillis = millis;
-    }
+      dt = req.substring(0, 23);
+      curPos = req.indexOf(" ", 24);
+      level = req.substring(24, curPos);
 
-    lastMillis = millis;
+      if ((logLevel != null) && !logLevel.equals(level)) {
+        return null;
+      }
 
-    taskId = taskId(req);
+      millis = millis();
+      if (millis == null) {
+        error("Unable to get millis for %s", req);
+        return null;
+      }
 
-    if (posValid()) {
-      logText = req.substring(curPos);
-    }
+      if (startMillis != 0) {
+        sinceLastMillis = millis - lastMillis;
+        sinceStartMillis = millis - startMillis;
+      } else {
+        startMillis = millis;
+      }
 
-    if (logName == null) {
+      lastMillis = millis;
+
+      className = className(req);
+      taskId = taskId(req);
+
+      if (posValid()) {
+        logText = req.substring(curPos);
+      } else {
+        logText = "";
+      }
+
+      if (logName == null) {
+        return curPos;
+      }
+
+      curPos = req.indexOf(logName + ":");
+
+      if (curPos < 0) {
+        error("No name found for %s", req);
+        return null;
+      }
+
+      curPos += logName.length() + 2; // skip ":"
+
+      //if (!logName.equals(field())) {
+      //  error("Expected %s for %s", logName, req);
+      //  return null;
+      //}
+
       return curPos;
+    } catch (final Throwable t) {
+      error("Unable to parse %s", req);
+      throw t;
     }
-
-    curPos = req.indexOf(logName + ":");
-
-    if (curPos < 0) {
-      error("No name found for %s", req);
-      return null;
-    }
-
-    curPos += logName.length() + 2; // skip ":"
-
-    //if (!logName.equals(field())) {
-    //  error("Expected %s for %s", logName, req);
-    //  return null;
-    //}
-
-    return curPos;
   }
 
   public boolean sameTask(final LogEntry otherEntry) {
@@ -105,6 +130,27 @@ public class LogEntry {
     return (curPos >= 0) && (curPos < req.length());
   }
 
+  private String className(final String ln) {
+    int cnPos = ln.indexOf("[");
+    if (cnPos < 0) {
+      return null;
+    }
+
+    cnPos ++;
+
+    curPos = ln.indexOf("]", cnPos);
+
+    if (curPos < 0) {
+      return null;
+    }
+
+    final var res = ln.substring(cnPos, curPos);
+
+    curPos++;
+
+    return res;
+  }
+
   private String taskId(final String ln) {
     //final int taskIdPos = ln.indexOf("] (default");
     int taskIdPos = ln.indexOf("] (");
@@ -122,7 +168,7 @@ public class LogEntry {
 
     final var res = ln.substring(taskIdPos, curPos);
 
-    curPos++;
+    curPos += 2; // skip blank after taskid
 
     return res;
   }
