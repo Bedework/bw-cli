@@ -42,7 +42,9 @@ public class ReqInOutLogEntry extends LogEntry {
 
   public List<LogEntry> entries = new ArrayList<>();
   public boolean skipping;
+  public boolean doingCalsuite;
   public String user;
+  public String calsuiteName;
   public String uri;
   public String sessid;
   public String handlerClass;

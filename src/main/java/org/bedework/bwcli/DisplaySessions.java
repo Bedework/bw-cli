@@ -67,7 +67,22 @@ public class DisplaySessions extends LogAnalysis {
       // This may not be correct if requests overlap
       le.unparsed(s);
       if (lastMapRs != null) {
-        lastMapRs.addLogEntry(le);
+        if (lastMapRs.doingCalsuite) {
+          final var nmstr = "  name=";
+          final var spos = s.indexOf(nmstr);
+
+          if (spos >= 0) {
+            final var pos = s.indexOf(",", spos);
+            if (pos < 0) {
+              le.unparsed(s);
+            } else {
+              lastMapRs.calsuiteName = s.substring(spos + nmstr.length(),
+                                                   pos);
+            }
+          }
+        } else {
+          lastMapRs.addLogEntry(le);
+        }
       }
 
       return;
@@ -78,6 +93,10 @@ public class DisplaySessions extends LogAnalysis {
       if (lastMapRs != null) {
         lastMapRs.addLogEntry(le);
       }
+      return;
+    }
+
+    if ("ChangeNotifications".equals(le.taskId)) {
       return;
     }
 
@@ -121,6 +140,7 @@ public class DisplaySessions extends LogAnalysis {
     final String gru = "getRemoteUser = ";
     final String gruri = "getRequestURI = ";
     final String grsess = "getRequestedSessionId = ";
+    final String fcs = "Found calSuite BwCalSuiteWrapper";
 
     if (lt.startsWith(gru)) {
       final var loguser = lt.substring(gru.length());
@@ -140,6 +160,8 @@ public class DisplaySessions extends LogAnalysis {
       mapRs.uri = lt.substring(gruri.length());
     } else if (lt.startsWith(grsess)) {
       mapRs.sessid = lt.substring(grsess.length());
+    } else if (lt.startsWith(fcs)) {
+      mapRs.doingCalsuite = true;
     } else {
       mapRs.addLogEntry(le);
     }
@@ -163,8 +185,13 @@ public class DisplaySessions extends LogAnalysis {
     // Output the log entries
 
     outFmt("Request in: %s out %s task %s", rsin.dt, rsout.dt, rsin.taskId);
-    outFmt("    uri: %s", rsin.uri);
-    outFmt("   user: %s", rsin.user);
+    outFmt("     uri: %s", rsin.uri);
+    outFmt("    user: %s", rsin.user);
+    if (rsin.calsuiteName != null) {
+      outFmt("calsuite: %s", rsin.calsuiteName);
+    } else {
+      outFmt("calsuite: %s", "NONE");
+    }
 
     for (final var le: rsin.entries) {
       outFmt("         %s", le.logText);
