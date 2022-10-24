@@ -143,7 +143,6 @@ public class BwCli extends JolokiaCli {
     String jmxUrl = null;
     boolean logShowLong = false;
     boolean logShowMissingTaskIds = false;
-    boolean logSummariseTests = false;
     boolean debug = false;
 
     try {
@@ -166,14 +165,14 @@ public class BwCli extends JolokiaCli {
         }
 
         if (pargs.ifMatch("logsummarisetests")) {
-          logSummariseTests = true;
-          continue;
+          new SummariseTests().process(pargs.next(), logShowLong,
+                                       logShowMissingTaskIds);
+          return;  // Always 1 shot
         }
 
         if (pargs.ifMatch("loganalyse")) {
           new LogAnalysis().process(pargs.next(), logShowLong,
-                                    logShowMissingTaskIds,
-                                    logSummariseTests);
+                                    logShowMissingTaskIds);
           return;  // Always 1 shot
         }
 

@@ -3,16 +3,11 @@
 */
 package org.bedework.bwcli;
 
-import org.bedework.bwcli.logs.LogEntry;
+import org.bedework.bwcli.logs.ContextInfo;
+import org.bedework.bwcli.logs.LogReader;
 import org.bedework.bwcli.logs.ReqInOutLogEntry;
 import org.bedework.util.misc.Util;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.LineNumberReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,370 +25,19 @@ import java.util.TreeSet;
  *
  * User: mike Date: 1/4/19 Time: 22:43
  */
-public class LogAnalysis {
+public class LogAnalysis extends LogReader {
   long totalRequests;
   long totalForwardedRequests;
-  long errorLines;
-  long unterminatedTask;
-  boolean showLong;
-  boolean showMissingTaskIds;
-  boolean summariseTests;
 
-  int waitcountCount;
-  LogEntry lastReqline;
-  LogEntry lastEntry;
-
-  boolean dumpIndented;
-
-  final String wildflyStart = "[org.jboss.as] (Controller Boot Thread) WFLYSRV0025";
-
-  final Map<String, Integer> longreqIpMap = new HashMap<>();
-  final Map<String, ReqInOutLogEntry> tasks = new HashMap<>();
-
-  final static int numMilliBuckets = 20;
-  final static int milliBucketSize = 100;
-
-  class ContextInfo {
-    String context;
-    long requests;
-    long totalMillis;
-
-    // Total ignoring the highest bucket
-    long subTrequests;
-    long subTtotalMillis;
-
-    long[] buckets = new long[numMilliBuckets];
-    long rTotalReq; // Used for output
-
-    // How often we see ";jsessionid" in the incoming request
-    long sessions;
-
-    ContextInfo(final String context) {
-      this.context = context;
-    }
-
-    void reqOut(final String ln,
-                final ReqInOutLogEntry rs,
-                final long millis) {
-      requests++;
-      totalMillis += millis;
-
-      int bucket = (int)(millis / milliBucketSize);
-
-      if (bucket >= (numMilliBuckets - 1)) {
-        bucket = numMilliBuckets - 1;
-        if (showLong) {
-          final String dt = ln.substring(0, ln.indexOf(" INFO"));
-
-          outFmt("Long request %s %s %d: %s - %s %s",
-                 rs.ip, rs.taskId, millis, rs.dt, dt, rs.request);
-        }
-
-        int ct = longreqIpMap.computeIfAbsent(rs.ip, k -> 0);
-
-        ct = ct + 1;
-        longreqIpMap.put(rs.ip, ct);
-      }
-
-      buckets[bucket]++;
-
-      if (bucket < (numMilliBuckets - 1)) {
-        subTrequests++;
-        subTtotalMillis += millis;
-      }
-    }
+  @Override
+  public void processRecord(final String s) {
   }
 
-  final Map<String, ContextInfo> contexts = new HashMap<>();
-
-  public void process(final String logPathName,
-                      final boolean showLong,
-                      final boolean showMissingTaskIds,
-                      final boolean summariseTests) {
-    this.showLong = showLong;
-    this.showMissingTaskIds = showMissingTaskIds;
-    this.summariseTests = summariseTests;
-
-    try {
-      final Path logPath = Paths.get(logPathName);
-
-      final File logFile = logPath.toFile();
-
-      final LineNumberReader lnr = new LineNumberReader(new FileReader(logFile));
-
-      while (true) {
-        final String s = lnr.readLine();
-
-        if (s == null) {
-          break;
-        }
-
-        if (dumpIndented) {
-          // dump the rest of some formatted output.
-          if (s.startsWith(" ")) {
-            out(s);
-            continue;
-          }
-
-          dumpIndented = false;
-        }
-
-        if (infoLine(s)) {
-          doInfo(s);
-          continue;
-        }
-
-        if (summariseTests && debugLine(s)) {
-          doSummariseTests(s);
-        }
-
-        checkErrorLine(s);
-      }
-
-      results();
-    } catch (final Throwable t) {
-      t.printStackTrace();
-    }
+  @Override
+  public void processInfo(final ReqInOutLogEntry rs) {
   }
 
-  private void doInfo(final String s) {
-    if (s.contains(wildflyStart)) {
-      // Wildfly restarted
-      tasks.clear();
-      return;
-    }
-
-    //if (s.startsWith("2019-01-08 09:00:44,209")) {
-    //  out("the line");
-    //}
-
-    ReqInOutLogEntry rs = tryRequestLine(s);
-
-    if (rs != null) {
-      if (summariseTests) {
-        lastReqline = rs;
-      }
-
-      final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
-
-      if (mapRs != null) {
-        // No request-out message
-        unterminatedTask++;
-      }
-
-      tasks.put(rs.taskId, rs);
-
-      return;
-    }
-
-    rs = tryRequestOut(s);
-
-    if (rs != null) {
-      if (summariseTests && waitcountCount <= 1) {
-        outSummary(rs);
-      }
-
-      final ReqInOutLogEntry mapRs = tasks.get(rs.taskId);
-
-      if (mapRs == null) {
-        if (showMissingTaskIds) {
-          final String dt = s.substring(0, s.indexOf(" INFO"));
-
-          outFmt("Missing taskid %s %s",
-                 rs.taskId, dt);
-        }
-
-        return;
-      }
-
-      if (mapRs.context == null) {
-        outFmt("No context for %s %s", mapRs.dt, mapRs.request);
-
-        return;
-      }
-
-      if (!mapRs.sameTask(rs)) {
-        outFmt("Not same task %s\n %s", mapRs.toString(), rs.toString());
-
-        return;
-      }
-
-      final long reqMillis = rs.millis - mapRs.millis;
-      final ContextInfo ci =
-              contexts.computeIfAbsent(mapRs.context,
-                                       k -> new ContextInfo(mapRs.context));
-
-      ci.reqOut(s, mapRs, reqMillis);
-
-      if (rs.hasJsessionid()) {
-        ci.sessions++;
-      }
-
-      // Done with the entry
-      tasks.remove(rs.taskId);
-    }
-  }
-
-  private void doSummariseTests(final String s) {
-    // Display various lines from the log
-    // 2020-01-14 15:46:04,709 DEBUG [org.bedework.caldav.server.CaldavBWServlet] (default task-1) entry: PROPFIND
-    final LogEntry le = new LogEntry();
-
-    if (le.parse(s, null, "DEBUG") == null) {
-      out(s + " ******************** Unparseable");
-      return;
-    }
-
-    if (s.contains(" entry: ")) {
-      lastEntry = le;
-      return;
-    }
-
-    /* TODO - still not right....
-       We should check the task id between a request in and out.
-       If it's different then we have some interleaved request
-     */
-
-    /* If it's a WAITCOUNT and there's been a WAITCOUNT with no
-       other task output just bump the count.
-     */
-
-    final var testUserAgentLabel = "User-Agent = \"Cal-Tester: ";
-    final var isUserAgent = s.contains("User-Agent = \"");
-    final var isCalTest = s.contains(testUserAgentLabel);
-    final var isWaitcount = isCalTest && s.contains("WAITCOUNT ");
-
-    if (isWaitcount) {
-      //
-      if (waitcountCount > 0) {
-        waitcountCount++;
-        return;
-      }
-
-      lastEntry = null;
-      waitcountCount = 1;
-    } else if (isUserAgent && (waitcountCount > 0)) {
-      out(">---------------------------- WAITCOUNT = " + waitcountCount);
-      waitcountCount = 0;
-    }
-
-    if (waitcountCount > 1) {
-      return;
-    }
-
-    if (s.contains(" User-Agent = \"")) {
-      outSummary(lastReqline);
-      outSummary(lastEntry);
-      final var pos = le.logText.indexOf(testUserAgentLabel);
-      if (pos >= 0) {
-        le.logText = "------------- Test ---> " +
-                le.logText.substring(0, pos) +
-                le.logText.substring(pos + testUserAgentLabel.length(),
-                                     le.logText.length() - 1) +
-                "<------------------";
-        outSummary(le);
-      }
-
-      return;
-    }
-
-    if (s.contains(" getRequestURI =")) {
-      outSummary(le);
-      return;
-    }
-
-    if (s.contains(" getRemoteUser =")) {
-      outSummary(le);
-      return;
-    }
-
-    if (s.contains("=BwInoutSched")) {
-      outSchedSummary(le);
-      return;
-    }
-
-  }
-
-  private void outSummary(final LogEntry le) {
-    if (le == null) {
-      return;
-    }
-    outFmt("%s %-4s %-8s %s %s", le.dt,
-           le.sinceLastMillis, le.sinceStartMillis,
-           taskIdSummary(le), le.logText);
-  }
-
-  private String taskIdSummary(final LogEntry le) {
-    if (le.taskId.startsWith("default ")) {
-      return le.taskId.substring(8);
-    }
-
-    if (le.taskId.startsWith("org.bedework.bwengine:service=")) {
-      return le.taskId.substring(30);
-    }
-
-    return le.taskId;
-  }
-
-  private void outSchedSummary(final LogEntry le) {
-    final var s = le.logText;
-
-    if (s.contains("set event to")) {
-      outSummary(le);
-      return;
-    }
-
-    if (s.contains("Indexing to")) {
-      outSummary(le);
-    }
-
-    if (s.contains("Add event with name")) {
-      outSummary(le);
-    }
-
-    if (s.contains("Received messageEntityQueuedEvent")) {
-      outSummary(le);
-      dumpIndented = true;
-    }
-  }
-
-  private ReqInOutLogEntry tryRequestLine(final String ln) {
-    return tryRequestInOutLine(ln, true);
-  }
-
-  private ReqInOutLogEntry tryRequestOut(final String ln) {
-    return tryRequestInOutLine(ln, false);
-  }
-
-  private ReqInOutLogEntry tryRequestInOutLine(final String ln,
-                                               final boolean in) {
-    final ReqInOutLogEntry rs = new ReqInOutLogEntry();
-    final Integer res = rs.parse(ln, in);
-
-    if ((res == null) || (res < 0)) {
-      return null;
-    }
-
-    return rs;
-  }
-
-  private boolean infoLine(final String ln) {
-    return ln.indexOf(" INFO ") == 23;
-  }
-
-  private boolean debugLine(final String ln) {
-    return ln.indexOf(" DEBUG ") == 23;
-  }
-
-  private void checkErrorLine(final String ln) {
-    if (ln.indexOf(" ERROR ") != 23) {
-      return;
-    }
-
-    errorLines++;
-  }
-
-  private void results() {
+  public void results() {
     outFmt("Total requests: %d", totalRequests);
     if (totalForwardedRequests != totalRequests) {
       outFmt("Total forwarded requests: %d", totalForwardedRequests);
@@ -429,7 +73,7 @@ public class LogAnalysis {
 
     // Output each bucket for each context
 
-    for (int i = 0; i < numMilliBuckets; i++) {
+    for (int i = 0; i < ContextInfo.numMilliBuckets; i++) {
       final StringBuilder l =
               new StringBuilder(String.format(labelPattern, "<" + ((i + 1) * 100)));
 
@@ -438,10 +82,10 @@ public class LogAnalysis {
         // bucket and percent
 
         l.append(String.format(cellFormats[j],
-                 ci.buckets[i],
-                 ((int)(100 * ci.rTotalReq / ci.requests))));
+                 ci.getBucket(i),
+                 ((int)(100 * ci.rTotalReq / ci.getRequests()))));
 
-        ci.rTotalReq += ci.buckets[i];
+        ci.rTotalReq += ci.getBucket(i);
       }
 
       outFmt("%s", l);
@@ -465,16 +109,16 @@ public class LogAnalysis {
       final ContextInfo ci = cis[j];
 
       sessReq.append(String.format(hdrFormats[j],
-                                  ci.sessions));
+                                  ci.getSessions()));
       totReq.append(String.format(hdrFormats[j],
-                                  ci.requests));
+                                  ci.getRequests()));
       avgMs.append(String.format(hdrFormats[j],
-                                 (int)(ci.totalMillis / ci.requests)));
+                                 (int)(ci.getTotalMillis() / ci.getRequests())));
 
       subTtotReq.append(String.format(hdrFormats[j],
-                                      ci.subTrequests));
+                                      ci.getSubTrequests()));
       subTavgMs.append(String.format(hdrFormats[j],
-                                     (int)(ci.subTtotalMillis / ci.subTrequests)));
+                                     (int)(ci.getSubTtotalMillis() / ci.getSubTrequests())));
     }
 
     outFmt("%s", sessReq);
@@ -519,23 +163,5 @@ public class LogAnalysis {
         break;
       }
     }
-  }
-
-  private void outFmt(final String format,
-                      final Object... args) {
-    System.out.println(String.format(format, args));
-  }
-
-  private void out(final String val) {
-    System.out.println(val);
-  }
-
-/*  private void error(final String format,
-                     final Object... args) {
-    System.out.println(String.format(format, args));
-  }*/
-
-  private void out() {
-    System.out.println();
   }
 }
