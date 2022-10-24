@@ -25,6 +25,7 @@ public class ReqInOutLogEntry extends LogEntry {
   String url;
 
   boolean unparseable;
+  public boolean placeHolder;
 
   List<NameValuePair> params;
 
@@ -48,6 +49,17 @@ public class ReqInOutLogEntry extends LogEntry {
   public String uri;
   public String sessid;
   public String handlerClass;
+
+  public static ReqInOutLogEntry forMissingEntry(final LogEntry le) {
+    final var ri = new ReqInOutLogEntry();
+
+    ri.placeHolder = true;
+    ri.dt = le.dt;
+    ri.logText = le.logText;
+    ri.className = le.className;
+    ri.taskId = le.taskId;
+    return ri;
+  }
 
   public Integer parse(final String req,
                        final boolean in) {

@@ -27,6 +27,14 @@ public class DisplaySessions extends LogAnalysis {
   private final List<String> skipContent =
           Arrays.asList(
                   "No form in session",
+                  "Found form in session",
+                  "Close for ",
+                  "About to embed ",
+                  "After embed ",
+                  "HttpUtils.getRequestURL(req) = ",
+                  "request=org.apache.struts2",
+                  "host=",
+                  "  b = \"de\"",
                   "==============",
                   "actionType:",
                   "conversation: ",
@@ -120,12 +128,12 @@ public class DisplaySessions extends LogAnalysis {
       return;
     }
 
-    final ReqInOutLogEntry mapRs = tasks.get(le.taskId);
+    ReqInOutLogEntry mapRs = tasks.get(le.taskId);
 
     if (mapRs == null) {
-      // No associated request
-      outFmt("No task %s found for %s", le.taskId, s);
-      return;
+      // No associated request - create a placeholder
+      mapRs = ReqInOutLogEntry.forMissingEntry(le);
+      tasks.put(le.taskId, mapRs);
     }
 
     lastMapRs = mapRs;
@@ -185,6 +193,10 @@ public class DisplaySessions extends LogAnalysis {
     // Output the log entries
 
     outFmt("Request in: %s out %s task %s", rsin.dt, rsout.dt, rsin.taskId);
+    if (rsin.placeHolder) {
+      out("   **** No REQUEST in found *****");
+    }
+
     outFmt("     uri: %s", rsin.uri);
     outFmt("    user: %s", rsin.user);
     if (rsin.calsuiteName != null) {
