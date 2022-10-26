@@ -3,6 +3,7 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.DisplaySessions.DisplayMode;
 import org.bedework.bwcli.bwcmd.CmdAdminGroups;
 import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.copiedCalFacade.responses.AdminGroupsResponse;
@@ -38,6 +39,10 @@ import org.bedework.util.jolokia.JolokiaClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;
+
+import static org.bedework.bwcli.DisplaySessions.DisplayMode.full;
+import static org.bedework.bwcli.DisplaySessions.DisplayMode.list;
+import static org.bedework.bwcli.DisplaySessions.DisplayMode.summary;
 
 /**
  * User: mike
@@ -141,10 +146,12 @@ public class BwCli extends JolokiaCli {
     String cmd = null;
     String cmdFile = null;
     String jmxUrl = null;
+    String requestDt = null;
     String sessionId = null;
     String sessionUser = null;
     boolean skipAnon = false;
-    boolean summary = false;
+    boolean displayTotals = false;
+    DisplayMode displayMode = full;
     boolean logShowLong = false;
     boolean logShowMissingTaskIds = false;
     boolean debug = false;
@@ -183,8 +190,10 @@ public class BwCli extends JolokiaCli {
         if (pargs.ifMatch("sessions")) {
           new DisplaySessions(sessionId,
                               sessionUser,
+                              requestDt,
                               skipAnon,
-                              summary).
+                              displayTotals,
+                              displayMode).
                   process(pargs.next(), logShowLong,
                           logShowMissingTaskIds);
           return;  // Always 1 shot
@@ -195,8 +204,28 @@ public class BwCli extends JolokiaCli {
           continue;
         }
 
+        if (pargs.ifMatch("displayTotals")) {
+          displayTotals = true;
+          continue;
+        }
+
         if (pargs.ifMatch("summary")) {
-          summary = true;
+          displayMode = summary;
+          continue;
+        }
+
+        if (pargs.ifMatch("list")) {
+          displayMode = list;
+          continue;
+        }
+
+        if (pargs.ifMatch("full")) {
+          displayMode = full;
+          continue;
+        }
+
+        if (pargs.ifMatch("requestDt")) {
+          requestDt = pargs.next();
           continue;
         }
 

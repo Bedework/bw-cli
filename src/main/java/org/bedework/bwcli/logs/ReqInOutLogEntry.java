@@ -40,6 +40,7 @@ public class ReqInOutLogEntry extends LogEntry {
   String referer;
   String xForwardedFor;
 
+  public boolean hadError;
   public boolean skipping;
   public boolean doingCalsuite;
   public boolean doingReqPars;

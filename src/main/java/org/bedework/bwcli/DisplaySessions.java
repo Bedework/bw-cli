@@ -8,7 +8,9 @@ import org.bedework.bwcli.logs.ReqInOutLogEntry;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+
+import static org.bedework.bwcli.DisplaySessions.DisplayMode.list;
+import static org.bedework.bwcli.DisplaySessions.DisplayMode.summary;
 
 /**
  * User: mike Date: 10/23/22 Time: 21:53
@@ -16,8 +18,17 @@ import java.util.Set;
 public class DisplaySessions extends LogAnalysis {
   private final String taskId;
   private final String user;
+  private final String requestDt;
   private final boolean skipAnon;
-  private final boolean summary;
+  private final boolean displayTotals;
+
+  public enum DisplayMode {
+    full,    // display everything
+    summary, // Small subset of entries
+    list     // Enough to track requests
+  }
+
+  private final DisplayMode displayMode;
 
   private ReqInOutLogEntry lastMapRs;
 
@@ -100,12 +111,16 @@ public class DisplaySessions extends LogAnalysis {
 
   public DisplaySessions(final String taskId,
                          final String user,
+                         final String requestDt,
                          final boolean skipAnon,
-                         final boolean summary) {
+                         final boolean displayTotals,
+                         final DisplayMode displayMode) {
     this.taskId = taskId;
     this.user = user;
+    this.requestDt = requestDt;
     this.skipAnon = skipAnon;
-    this.summary = summary;
+    this.displayTotals = displayTotals;
+    this.displayMode = displayMode;
   }
 
   public void processRecord(final String s) {
@@ -160,20 +175,9 @@ public class DisplaySessions extends LogAnalysis {
       return;
     }
 
-    if (le.className != null) {
-      for (final var c: skipClasses) {
-        if (le.className.startsWith(c)) {
-          return;
-        }
-      }
-    }
-
-    if (le.logText != null) {
-      for (final var c: skipContent) {
-        if (le.logText.startsWith(c)) {
-          return;
-        }
-      }
+    if (startMatches(le.className, skipClasses) ||
+        startMatches(le.logText, skipContent)) {
+      return;
     }
 
     if ((taskId != null) && !taskId.equals(le.taskId)) {
@@ -190,8 +194,20 @@ public class DisplaySessions extends LogAnalysis {
     mapRs.doingCalsuite = false;
     lastMapRs = mapRs;
 
+    if (requestDt != null) {
+      if ((mapRs.dt != null) &&
+            !mapRs.dt.startsWith(requestDt)){
+        mapRs.skipping = true;
+        return;
+      }
+    }
+
     if (mapRs.skipping) {
       return;
+    }
+
+    if ("ERROR".equals(le.level)) {
+      mapRs.hadError = true;
     }
 
     final String lt = le.logText;
@@ -251,6 +267,15 @@ public class DisplaySessions extends LogAnalysis {
     }
   }
 
+
+  public void results() {
+    if (displayTotals) {
+      super.results();
+    }
+  }
+
+  final String sessionDelim = "----------------------------------\n";
+
   @Override
   public void requestOut(final ReqInOutLogEntry rsin,
                          final ReqInOutLogEntry rsout) {
@@ -275,13 +300,17 @@ public class DisplaySessions extends LogAnalysis {
 
     outFmt(" exit to: %s", rsin.exitTo);
 
+    if (rsin.hadError) {
+      out("***** An error occurred");
+    }
+
     outFmt("   class: %s", rsin.className);
     outFmt("     uri: %s", rsin.uri);
-    outFmt("    user: %s", rsin.user);
-    if (rsin.calsuiteName != null) {
-      outFmt("calsuite: %s", rsin.calsuiteName);
-    } else {
-      outFmt("calsuite: %s", "NONE");
+    outFmt("    user: %s  calsuite %s", rsin.user, rsin.calsuiteName);
+
+    if (displayMode == list) {
+      out(sessionDelim);
+      return;
     }
 
     logEntries:
@@ -291,16 +320,9 @@ public class DisplaySessions extends LogAnalysis {
         continue;
       }
 
-      if ("ERROR".equals(le.level)) {
-        out("******************An error occurred");
-      }
-
-      if (summary) {
-        for (final var s: skipForSummary) {
-          if (le.logText.startsWith(s)) {
-            continue logEntries;
-          }
-        }
+      if ((displayMode == summary) &&
+              startMatches(le.logText, skipForSummary)) {
+        continue logEntries;
       }
 
       final var doingRpars = lt.equals("Request parameters");
@@ -322,11 +344,15 @@ public class DisplaySessions extends LogAnalysis {
       }
     }
 
-    out("----------------------------------\n");
+    out(sessionDelim);
   }
 
   private boolean startMatches(final String text,
-                               final Set<String> prefixes) {
+                               final List<String> prefixes) {
+    if (text == null) {
+      return false;
+    }
+
     for (final var s: prefixes) {
       if (text.startsWith(s)) {
         return true;
