@@ -144,6 +144,7 @@ public class BwCli extends JolokiaCli {
     String sessionId = null;
     String sessionUser = null;
     boolean skipAnon = false;
+    boolean summary = false;
     boolean logShowLong = false;
     boolean logShowMissingTaskIds = false;
     boolean debug = false;
@@ -182,7 +183,8 @@ public class BwCli extends JolokiaCli {
         if (pargs.ifMatch("sessions")) {
           new DisplaySessions(sessionId,
                               sessionUser,
-                              skipAnon).
+                              skipAnon,
+                              summary).
                   process(pargs.next(), logShowLong,
                           logShowMissingTaskIds);
           return;  // Always 1 shot
@@ -190,6 +192,11 @@ public class BwCli extends JolokiaCli {
 
         if (pargs.ifMatch("skipAnon")) {
           skipAnon = true;
+          continue;
+        }
+
+        if (pargs.ifMatch("summary")) {
+          summary = true;
           continue;
         }
 

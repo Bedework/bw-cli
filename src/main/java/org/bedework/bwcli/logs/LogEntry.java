@@ -5,6 +5,9 @@ package org.bedework.bwcli.logs;
 
 import org.bedework.util.misc.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * User: mike Date: 1/14/20 Time: 22:20
  */
@@ -27,6 +30,10 @@ public class LogEntry {
   public boolean unparsed;
 
   String logName;
+
+  // Sub records - e.g. continuation lines
+  public List<LogEntry> entries = new ArrayList<>();
+  public LogEntry lastAdded;
 
   public void unparsed(final String req) {
     unparsed = true;
@@ -99,6 +106,11 @@ public class LogEntry {
       error("Unable to parse %s", req);
       throw t;
     }
+  }
+
+  public void addLogEntry(final LogEntry val) {
+    entries.add(val);
+    lastAdded = val;
   }
 
   public boolean sameTask(final LogEntry otherEntry) {
