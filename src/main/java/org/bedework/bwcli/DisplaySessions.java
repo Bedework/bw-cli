@@ -308,7 +308,10 @@ public class DisplaySessions extends LogAnalysis {
     outFmt("     uri: %s", rsin.uri);
     outFmt("    user: %s  calsuite %s", rsin.user, rsin.calsuiteName);
 
-    if (displayMode == list) {
+    final var fetchEvent = rsin.className.endsWith("FetchEventAction");
+    final var updateEvent = rsin.className.endsWith("UpdateEventAction");
+
+    if ((displayMode == list) && !fetchEvent && !updateEvent) {
       out(sessionDelim);
       return;
     }
@@ -320,12 +323,25 @@ public class DisplaySessions extends LogAnalysis {
         continue;
       }
 
+      final var doingRpars = lt.equals("Request parameters");
+
+      if (fetchEvent && doingRpars) {
+        displayEventHref(le);
+        continue logEntries;
+      }
+
+      if (doingRpars && updateEvent) {
+        displayEventHref(le);
+      }
+
+      if (displayMode == list) {
+        continue;
+      }
+
       if ((displayMode == summary) &&
               startMatches(le.logText, skipForSummary)) {
         continue logEntries;
       }
-
-      final var doingRpars = lt.equals("Request parameters");
 
       if (doingRpars) {
         if (!le.entries.isEmpty()) {
@@ -345,6 +361,66 @@ public class DisplaySessions extends LogAnalysis {
     }
 
     out(sessionDelim);
+  }
+
+  private void displayEventHref(final LogEntry le) {
+    String calPath = null;
+    String guid = null;
+    String rid = null;
+    String href = null;
+
+    if (!le.entries.isEmpty()) {
+      for (final var suble: le.entries) {
+        var val = tryReqPar(suble, "calPath");
+        if (val != null) {
+          calPath = val;
+          continue;
+        }
+
+        val = tryReqPar(suble, "guid");
+        if (val != null) {
+          guid = val;
+          continue;
+        }
+
+        val = tryReqPar(suble, "recurrenceId");
+        if (val != null) {
+          rid = val;
+          continue;
+        }
+
+        val = tryReqPar(suble, "href");
+        if (val != null) {
+          href = val;
+        }
+      }
+    }
+
+    if (href != null) {
+      outFmt("   event: %s", href);
+      return;
+    }
+
+    if (rid == null) {
+      outFmt("   event: %s %s", calPath, guid);
+      return;
+
+    }
+
+    outFmt("   event: %s %s %s", calPath, guid, rid);
+  }
+
+  private String tryReqPar(final LogEntry le,
+                           final String parName) {
+    var test = parName + " = \"";
+    final var lt = le.logText;
+    final var pos = lt.indexOf(test);
+
+    if (pos < 0) {
+      return null;
+    }
+
+    return lt.substring(pos + test.length()).replace("\"", "");
   }
 
   private boolean startMatches(final String text,
