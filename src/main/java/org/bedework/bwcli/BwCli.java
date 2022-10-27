@@ -147,7 +147,7 @@ public class BwCli extends JolokiaCli {
     String cmdFile = null;
     String jmxUrl = null;
     String requestDt = null;
-    String sessionId = null;
+    String taskId = null;
     String sessionUser = null;
     boolean skipAnon = false;
     boolean displayTotals = false;
@@ -188,7 +188,7 @@ public class BwCli extends JolokiaCli {
         }
 
         if (pargs.ifMatch("sessions")) {
-          new DisplaySessions(sessionId,
+          new DisplaySessions(taskId,
                               sessionUser,
                               requestDt,
                               skipAnon,
@@ -229,8 +229,8 @@ public class BwCli extends JolokiaCli {
           continue;
         }
 
-        if (pargs.ifMatch("sessionId")) {
-          sessionId = pargs.next();
+        if (pargs.ifMatch("taskId")) {
+          taskId = pargs.next();
           continue;
         }
 
