@@ -17,6 +17,7 @@ import static org.bedework.bwcli.DisplaySessions.DisplayMode.summary;
  */
 public class DisplaySessions extends LogAnalysis {
   private final String taskId;
+  private final String sessionId;
   private final String user;
   private final String requestDt;
   private final boolean skipAnon;
@@ -110,12 +111,14 @@ public class DisplaySessions extends LogAnalysis {
   );
 
   public DisplaySessions(final String taskId,
+                         final String sessionId,
                          final String user,
                          final String requestDt,
                          final boolean skipAnon,
                          final boolean displayTotals,
                          final DisplayMode displayMode) {
     this.taskId = taskId;
+    this.sessionId = sessionId;
     this.user = user;
     this.requestDt = requestDt;
     this.skipAnon = skipAnon;
@@ -191,8 +194,17 @@ public class DisplaySessions extends LogAnalysis {
       mapRs = ReqInOutLogEntry.forMissingEntry(le);
       tasks.put(le.taskId, mapRs);
     }
+
     mapRs.doingCalsuite = false;
     lastMapRs = mapRs;
+
+    if (sessionId != null) {
+      if ((mapRs.sessid != null) &&
+            !mapRs.sessid.equals(sessionId)){
+        mapRs.skipping = true;
+        return;
+      }
+    }
 
     if (requestDt != null) {
       if ((mapRs.dt != null) &&
@@ -304,6 +316,7 @@ public class DisplaySessions extends LogAnalysis {
       out("***** An error occurred");
     }
 
+    outFmt("  sessid: %s", rsin.sessid);
     outFmt("   class: %s", rsin.className);
     outFmt("     uri: %s", rsin.uri);
     outFmt("    user: %s  calsuite %s", rsin.user, rsin.calsuiteName);

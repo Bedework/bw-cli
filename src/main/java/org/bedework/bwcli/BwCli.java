@@ -148,6 +148,7 @@ public class BwCli extends JolokiaCli {
     String jmxUrl = null;
     String requestDt = null;
     String taskId = null;
+    String sessionId = null;
     String sessionUser = null;
     boolean skipAnon = false;
     boolean displayTotals = false;
@@ -189,6 +190,7 @@ public class BwCli extends JolokiaCli {
 
         if (pargs.ifMatch("sessions")) {
           new DisplaySessions(taskId,
+                              sessionId,
                               sessionUser,
                               requestDt,
                               skipAnon,
@@ -226,6 +228,11 @@ public class BwCli extends JolokiaCli {
 
         if (pargs.ifMatch("requestDt")) {
           requestDt = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("sessionId")) {
+          sessionId = pargs.next();
           continue;
         }
 
