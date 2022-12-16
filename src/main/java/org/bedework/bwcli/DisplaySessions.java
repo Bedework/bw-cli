@@ -64,6 +64,7 @@ public class DisplaySessions extends LogAnalysis {
           "Request out for module ",
           "Request parameters - global info and uris",
           "Set presentation state",
+          "setAutoCommit",
           "Setting locale to ",
           "XSLTFilter: Converting",
           "==============",
@@ -305,12 +306,13 @@ public class DisplaySessions extends LogAnalysis {
 
     // Output the log entries
 
+    outFmt("     uri: %s", rsin.uri);
+
+    outFmt(" exit to: %s", rsin.exitTo);
     outFmt("Request in: %s out %s task %s", rsin.dt, rsout.dt, rsin.taskId);
     if (rsin.placeHolder) {
       out("   **** No REQUEST in found *****");
     }
-
-    outFmt(" exit to: %s", rsin.exitTo);
 
     if (rsin.hadError) {
       out("***** An error occurred");
@@ -318,7 +320,6 @@ public class DisplaySessions extends LogAnalysis {
 
     outFmt("  sessid: %s", rsin.sessid);
     outFmt("   class: %s", rsin.className);
-    outFmt("     uri: %s", rsin.uri);
     outFmt("    user: %s  calsuite %s", rsin.user, rsin.calsuiteName);
 
     final var fetchEvent = rsin.className.endsWith("FetchEventAction");
