@@ -3,6 +3,7 @@
 */
 package org.bedework.bwcli;
 
+import org.apache.commons.lang.SystemUtils;
 import org.fusesource.jansi.AnsiConsole;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.console.SystemRegistry;
@@ -11,6 +12,7 @@ import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.keymap.KeyMap;
 import org.jline.reader.Binding;
 import org.jline.reader.EndOfFileException;
+import org.jline.reader.History;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.MaskingCallback;
@@ -29,6 +31,7 @@ import picocli.CommandLine.ParentCommand;
 import picocli.shell.jline3.PicocliCommands;
 import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -137,6 +140,8 @@ public class BwShell {
 
   public static void main(String[] args) {
     AnsiConsole.systemInstall();
+    History history = null;
+
     try {
       Supplier<Path> workDir = () -> Paths.get(System.getProperty("user.dir"));
       // set up JLine built-in commands
@@ -154,12 +159,13 @@ public class BwShell {
       // MyCustomFactory customFactory = createCustomFactory(); // your application custom factory
       // PicocliCommandsFactory factory = new PicocliCommandsFactory(customFactory); // chain the factories
 
-      CommandLine cmd = new CommandLine(commands, factory);
-      PicocliCommands picocliCommands = new PicocliCommands(cmd);
+      final CommandLine cmd = new CommandLine(commands, factory);
+      final PicocliCommands picocliCommands = new PicocliCommands(cmd);
 
-      Parser parser = new DefaultParser();
-      try (Terminal terminal = TerminalBuilder.builder().build()) {
-        SystemRegistry systemRegistry =
+      final Parser parser = new DefaultParser();
+
+      try (final Terminal terminal = TerminalBuilder.builder().build()) {
+        final SystemRegistry systemRegistry =
                 new SystemRegistryImpl(parser,
                                        terminal,
                                        workDir,
@@ -168,13 +174,20 @@ public class BwShell {
                 builtins, picocliCommands);
         systemRegistry.register("help", picocliCommands);
 
-        LineReader reader = LineReaderBuilder
+        final Path userHomePath =
+                SystemUtils.getUserHome().toPath();
+        final Path historyPath =
+                Paths.get(userHomePath.toString(),
+                          ".bwshell_history");
+        final LineReader reader = LineReaderBuilder
                 .builder()
                 .terminal(terminal)
                 .completer(systemRegistry.completer())
                 .parser(parser)
                 .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
+                .variable(LineReader.HISTORY_FILE, historyPath)
                 .build();
+        history = reader.getHistory();
         builtins.setLineReader(reader);
         commands.setReader(reader);
         factory.setTerminal(terminal);
@@ -183,7 +196,7 @@ public class BwShell {
         KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
         keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
 
-        String prompt = "prompt> ";
+        final String prompt = "bw> ";
         String rightPrompt = null;
 
         // start the shell and process input until the user quits with Ctrl-D
@@ -195,16 +208,23 @@ public class BwShell {
             systemRegistry.execute(line);
           } catch (UserInterruptException e) {
             // Ignore
-          } catch (EndOfFileException e) {
+          } catch (final EndOfFileException eofe) {
             return;
           } catch (Exception e) {
             systemRegistry.trace(e);
           }
         }
       }
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       t.printStackTrace();
     } finally {
+      if (history != null) {
+        try {
+          history.save();
+        } catch (final IOException ioe) {
+          System.err.println("Unable to write history");
+        }
+      }
       AnsiConsole.systemUninstall();
     }
   }
