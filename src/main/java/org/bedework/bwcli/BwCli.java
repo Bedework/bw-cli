@@ -3,7 +3,6 @@
 */
 package org.bedework.bwcli;
 
-import org.bedework.bwcli.DisplaySessions.DisplayMode;
 import org.bedework.bwcli.bwcmd.CmdAdminGroups;
 import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.copiedCalFacade.responses.AdminGroupsResponse;
@@ -32,17 +31,12 @@ import org.bedework.bwcli.jmxcmd.bwengine.CmdSystem;
 import org.bedework.bwcli.toolcmd.ToolCmd;
 import org.bedework.bwcli.toolcmd.ToolSource;
 import org.bedework.bwcli.toolcmd.ToolUser;
+import org.bedework.bwlogs.AccessLogs;
 import org.bedework.util.args.Args;
 import org.bedework.util.jolokia.JolokiaCli;
 import org.bedework.util.jolokia.JolokiaClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.net.URI;
-
-import static org.bedework.bwcli.DisplaySessions.DisplayMode.full;
-import static org.bedework.bwcli.DisplaySessions.DisplayMode.list;
-import static org.bedework.bwcli.DisplaySessions.DisplayMode.summary;
 
 /**
  * User: mike
@@ -146,15 +140,6 @@ public class BwCli extends JolokiaCli {
     String cmd = null;
     String cmdFile = null;
     String jmxUrl = null;
-    String requestDt = null;
-    String taskId = null;
-    String sessionId = null;
-    String sessionUser = null;
-    boolean skipAnon = false;
-    boolean displayTotals = false;
-    DisplayMode displayMode = full;
-    boolean logShowLong = false;
-    boolean logShowMissingTaskIds = false;
     boolean debug = false;
 
     try {
@@ -163,86 +148,6 @@ public class BwCli extends JolokiaCli {
       while (pargs.more()) {
         if (pargs.ifMatch("debug")) {
           debug = true;
-          continue;
-        }
-
-        if (pargs.ifMatch("logshowlong")) {
-          logShowLong = true;
-          continue;
-        }
-
-        if (pargs.ifMatch("logshowmissingtaskids")) {
-          logShowMissingTaskIds = true;
-          continue;
-        }
-
-        if (pargs.ifMatch("logsummarisetests")) {
-          new SummariseTests().process(pargs.next(), logShowLong,
-                                       logShowMissingTaskIds);
-          return;  // Always 1 shot
-        }
-
-        if (pargs.ifMatch("loganalyse")) {
-          new LogAnalysis().process(pargs.next(), logShowLong,
-                                    logShowMissingTaskIds);
-          return;  // Always 1 shot
-        }
-
-        if (pargs.ifMatch("sessions")) {
-          new DisplaySessions(taskId,
-                              sessionId,
-                              sessionUser,
-                              requestDt,
-                              skipAnon,
-                              displayTotals,
-                              displayMode).
-                  process(pargs.next(), logShowLong,
-                          logShowMissingTaskIds);
-          return;  // Always 1 shot
-        }
-
-        if (pargs.ifMatch("skipAnon")) {
-          skipAnon = true;
-          continue;
-        }
-
-        if (pargs.ifMatch("displayTotals")) {
-          displayTotals = true;
-          continue;
-        }
-
-        if (pargs.ifMatch("summary")) {
-          displayMode = summary;
-          continue;
-        }
-
-        if (pargs.ifMatch("list")) {
-          displayMode = list;
-          continue;
-        }
-
-        if (pargs.ifMatch("full")) {
-          displayMode = full;
-          continue;
-        }
-
-        if (pargs.ifMatch("requestDt")) {
-          requestDt = pargs.next();
-          continue;
-        }
-
-        if (pargs.ifMatch("sessionId")) {
-          sessionId = pargs.next();
-          continue;
-        }
-
-        if (pargs.ifMatch("taskId")) {
-          taskId = pargs.next();
-          continue;
-        }
-
-        if (pargs.ifMatch("sessionUser")) {
-          sessionUser = pargs.next();
           continue;
         }
 
@@ -307,11 +212,9 @@ public class BwCli extends JolokiaCli {
     private final String url;
     
     private HttpClient cl;
-    private final ObjectMapper om;
 
     WebClient(final String url) {
       this.url = url;
-      om = new JsonMapper();
     }
 
     public HttpClient getCl() {
@@ -342,14 +245,5 @@ public class BwCli extends JolokiaCli {
     System.err.println("   -cmds <qstring>    A path to a file of commands");
     System.err.println("   -cmd  <qstring>    A single quoted command to execute");
     System.err.println("   debug              To enable debug traces");
-    System.err.println("   access             Analyze access log");
-    System.err.println("   logshowlong        To enable display of long requests" +
-                       "                      in loganalyse");
-    System.err.println("   [logsummarisetests] loganalyse <path>  " +
-                       "                      Calculate and display information" +
-                       "                      from referenced log file. If" +
-                       "                      logsummarisetests is present then " +
-                       "                      display a summary to help when" +
-                       "                      running the tests");
   }
 }
