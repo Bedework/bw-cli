@@ -3,6 +3,10 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.jmxcmd.CmdListIdx;
+import org.bedework.bwcli.jmxcmd.CmdMakeIdxProd;
+import org.bedework.util.args.Args;
+
 import org.apache.commons.lang.SystemUtils;
 import org.fusesource.jansi.AnsiConsole;
 import org.jline.builtins.ConfigurationPath;
@@ -53,14 +57,35 @@ public class BwShell {
                   ""},
           footer = {"", "Press Ctrl-D to exit."},
           subcommands = {
-                  MyCommand.class, PicocliCommands.ClearScreen.class, CommandLine.HelpCommand.class})
-  static class CliCommands implements Runnable {
-    PrintWriter out;
+                  MyCommand.class,
+                  PicocliCommands.ClearScreen.class,
+                  CommandLine.HelpCommand.class,
+                  CmdMakeIdxProd.class,
+                  CmdListIdx.class})
+  static public class CliCommands implements Runnable {
+    private PrintWriter out;
+    private final Config conf;
 
-    CliCommands() {}
+    private JolokiaConfigClient client;
 
-    public void setReader(LineReader reader){
+    CliCommands(final Config conf) {
+      this.conf = conf;
+    }
+
+    public void setReader(final LineReader reader){
       out = reader.getTerminal().writer();
+    }
+
+    public JolokiaConfigClient getClient() {
+      if (client == null) {
+        client = new JolokiaConfigClient(conf.jmxUrl, conf.id, conf.pw);
+      }
+
+      return client;
+    }
+
+    public PrintWriter getOut() {
+      return out;
     }
 
     public void run() {
@@ -138,20 +163,48 @@ public class BwShell {
     }
   }
 
-  public static void main(String[] args) {
+  static class Config {
+    String jmxUrl;
+    String id;
+    String pw;
+  }
+
+  public static void main(final String[] args) {
+    final Config conf = new Config();
+
     AnsiConsole.systemInstall();
     History history = null;
 
     try {
-      Supplier<Path> workDir = () -> Paths.get(System.getProperty("user.dir"));
+      final Args pargs = new Args(args);
+
+      while (pargs.more()) {
+        if (pargs.ifMatch("jmxUrl")) {
+          conf.jmxUrl = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("-id")) {
+          conf.id = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("-pw")) {
+          conf.pw = pargs.next();
+          continue;
+        }
+      }
+
+      final Supplier<Path> workDir =
+              () -> Paths.get(System.getProperty("user.dir"));
       // set up JLine built-in commands
-      Builtins builtins = new Builtins(workDir,
-                                       new ConfigurationPath(null, null), null);
+      final Builtins builtins = new Builtins(workDir,
+                                             new ConfigurationPath(null, null), null);
       builtins.rename(Builtins.Command.TTOP, "top");
       builtins.alias("zle", "widget");
       builtins.alias("bindkey", "keymap");
       // set up picocli commands
-      CliCommands commands = new CliCommands();
+      final CliCommands commands = new CliCommands(conf);
 
       final PicocliCommandsFactory factory =
               new PicocliCommandsFactory();
@@ -191,9 +244,9 @@ public class BwShell {
         builtins.setLineReader(reader);
         commands.setReader(reader);
         factory.setTerminal(terminal);
-        TailTipWidgets widgets = new TailTipWidgets(reader, systemRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
+        final TailTipWidgets widgets = new TailTipWidgets(reader, systemRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
         widgets.enable();
-        KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
+        final KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
         keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
 
         final String prompt = "bw> ";
@@ -210,7 +263,7 @@ public class BwShell {
             // Ignore
           } catch (final EndOfFileException eofe) {
             return;
-          } catch (Exception e) {
+          } catch (final Exception e) {
             systemRegistry.trace(e);
           }
         }
