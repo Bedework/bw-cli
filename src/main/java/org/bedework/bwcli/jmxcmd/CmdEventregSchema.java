@@ -3,18 +3,20 @@
 */
 package org.bedework.bwcli.jmxcmd;
 
+import picocli.CommandLine;
+
 /**
  * User: mike
  * Date: 11/11/16
  * Time: 21:47
  */
-public class CmdEventregSchema extends JmxCmd {
-  public CmdEventregSchema() {
-    super("eventregschema", null, "Create the eventreg schema");
-  }
-
+@CommandLine.Command(name = "evregschema",
+        mixinStandardHelpOptions = true, version = "1.0",
+        subcommands = { CommandLine.HelpCommand.class },
+        description = {
+                "Create the eventreg schema"})
+public class CmdEventregSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(jcc.eventregSchema(cli.nextIs("export"),
-                                 cli.optionalKeyString("out")));
+    multiLine(client().eventregSchema(export, out));
   }
 }

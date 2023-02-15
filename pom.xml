@@ -147,7 +147,7 @@
           <assembleDirectory>${project.build.directory}/client</assembleDirectory>
           <programs>
             <program>
-              <mainClass>org.bedework.bwcli.BwCli</mainClass>
+              <mainClass>org.bedework.bwcli.BwShell</mainClass>
               <id>client</id>
             </program>
           </programs>

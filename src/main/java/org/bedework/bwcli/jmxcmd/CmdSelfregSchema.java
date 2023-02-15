@@ -3,18 +3,20 @@
 */
 package org.bedework.bwcli.jmxcmd;
 
+import picocli.CommandLine;
+
 /**
  * User: mike
  * Date: 11/11/16
  * Time: 21:47
  */
-public class CmdSelfregSchema extends JmxCmd {
-  public CmdSelfregSchema() {
-    super("selfregschema", null, "Create the selfreg schema");
-  }
-
+@CommandLine.Command(name = "selfregschema",
+        mixinStandardHelpOptions = true, version = "1.0",
+        subcommands = { CommandLine.HelpCommand.class },
+        description = {
+                "Create the selfreg schema"})
+public class CmdSelfregSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(jcc.selfregSchema(cli.nextIs("export"),
-                                cli.optionalKeyString("out")));
+    multiLine(client().selfregSchema(export, out));
   }
 }

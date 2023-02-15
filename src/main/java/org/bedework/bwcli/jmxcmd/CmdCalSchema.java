@@ -3,18 +3,20 @@
 */
 package org.bedework.bwcli.jmxcmd;
 
+import picocli.CommandLine;
+
 /**
  * User: mike
  * Date: 11/11/16
  * Time: 21:47
  */
-public class CmdCalSchema extends JmxCmd {
-  public CmdCalSchema() {
-    super("calschema", "[export] [outfile]", "Create the calendar core schema");
-  }
-
+@CommandLine.Command(name = "calschema",
+        mixinStandardHelpOptions = true, version = "1.0",
+        subcommands = { CommandLine.HelpCommand.class },
+        description = {
+                "Create the calendar core schema"})
+public class CmdCalSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(jcc.coreSchema(cli.nextIs("export"),
-                             cli.optionalKeyString("out")));
+    multiLine(client().coreSchema(export, out));
   }
 }

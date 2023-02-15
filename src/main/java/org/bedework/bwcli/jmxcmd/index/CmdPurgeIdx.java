@@ -1,22 +1,24 @@
 /* ********************************************************************
     Appropriate copyright notice
 */
-package org.bedework.bwcli.jmxcmd;
+package org.bedework.bwcli.jmxcmd.index;
+
+import org.bedework.bwcli.PicoCmd;
 
 import picocli.CommandLine;
 
 /**
  * User: mike
  * Date: 11/11/16
- * Time: 21:47
+ * Time: 21:43
  */
-@CommandLine.Command(name = "cardschema",
+@CommandLine.Command(name = "purge",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Create the carddav core schema"})
-public class CmdCardSchema extends SchemaCmd {
+                "Purge the old indexes."})
+public class CmdPurgeIdx extends PicoCmd {
   public void doExecute() throws Throwable {
-    multiLine(client().carddavSchema(export, out));
+    info(client().purgeIndexes());
   }
 }

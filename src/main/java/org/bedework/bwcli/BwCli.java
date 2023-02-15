@@ -6,27 +6,10 @@ package org.bedework.bwcli;
 import org.bedework.bwcli.bwcmd.CmdAdminGroups;
 import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.copiedCalFacade.responses.AdminGroupsResponse;
-import org.bedework.bwcli.jmxcmd.CmdCalSchema;
-import org.bedework.bwcli.jmxcmd.CmdCardSchema;
-import org.bedework.bwcli.jmxcmd.CmdEventregSchema;
-import org.bedework.bwcli.jmxcmd.CmdIdxStats;
-import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
-import org.bedework.bwcli.jmxcmd.CmdListIdx;
-import org.bedework.bwcli.jmxcmd.CmdMakeIdxProd;
-import org.bedework.bwcli.jmxcmd.CmdNewidx;
-import org.bedework.bwcli.jmxcmd.CmdNotifierSchema;
-import org.bedework.bwcli.jmxcmd.CmdPurgeIdx;
-import org.bedework.bwcli.jmxcmd.CmdRebuildIdx;
-import org.bedework.bwcli.jmxcmd.CmdRebuildStatus;
-import org.bedework.bwcli.jmxcmd.CmdReindex;
 import org.bedework.bwcli.jmxcmd.CmdRestoreCalData;
 import org.bedework.bwcli.jmxcmd.CmdSelfRegAdduser;
-import org.bedework.bwcli.jmxcmd.CmdSelfregSchema;
 import org.bedework.bwcli.jmxcmd.CmdSync;
 import org.bedework.bwcli.jmxcmd.CmdSysStats;
-import org.bedework.bwcli.jmxcmd.CmdTzGetAttr;
-import org.bedework.bwcli.jmxcmd.CmdTzRefresh;
-import org.bedework.bwcli.jmxcmd.CmdTzSetAttr;
 import org.bedework.bwcli.jmxcmd.bwengine.CmdSystem;
 import org.bedework.bwcli.toolcmd.ToolCmd;
 import org.bedework.bwcli.toolcmd.ToolSource;
@@ -66,35 +49,16 @@ public class BwCli extends JolokiaCli {
     register(new CmdAdminGroups());
     
     // jmx
-    register(new CmdCalSchema());
-    register(new CmdCardSchema());
-    register(new CmdIdxStats());
-    register(new CmdListIdx());
-    register(new CmdMakeIdxProd());
-    register(new CmdNewidx());
-    register(new CmdNotifierSchema());
-    register(new CmdPurgeIdx());
-    register(new CmdRebuildIdx());
-    register(new CmdRebuildStatus());
-    register(new CmdReindex());
     register(new CmdRestoreCalData());
     register(new CmdSysStats());
 
     register(new CmdSync());
 
-    register(new CmdTzGetAttr());
-    register(new CmdTzSetAttr());
-    register(new CmdTzRefresh());
-
-    register(new CmdEventregSchema());
-
-    register(new CmdSelfregSchema());
     register(new CmdSelfRegAdduser());
 
     // jmx - engine
 
     register(new CmdSystem());
-    register(new CmdJmxSetAttr());
 
     register(new ToolCmd());
     register(new ToolSource());

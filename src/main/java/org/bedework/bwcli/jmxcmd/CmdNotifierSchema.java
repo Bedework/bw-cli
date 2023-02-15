@@ -3,18 +3,20 @@
 */
 package org.bedework.bwcli.jmxcmd;
 
+import picocli.CommandLine;
+
 /**
  * User: mike
  * Date: 11/11/16
  * Time: 21:47
  */
-public class CmdNotifierSchema extends JmxCmd {
-  public CmdNotifierSchema() {
-    super("noteschema", "[export] [outfile]", "Create the calendar core schema");
-  }
-
+@CommandLine.Command(name = "noteschema",
+        mixinStandardHelpOptions = true, version = "1.0",
+        subcommands = { CommandLine.HelpCommand.class },
+        description = {
+                "Create the notifier schema"})
+public class CmdNotifierSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(jcc.notifierSchema(cli.nextIs("export"),
-                                 cli.optionalKeyString("out")));
+    multiLine(client().notifierSchema(export, out));
   }
 }
