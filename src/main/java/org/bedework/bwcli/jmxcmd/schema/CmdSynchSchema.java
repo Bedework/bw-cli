@@ -1,7 +1,9 @@
 /* ********************************************************************
     Appropriate copyright notice
 */
-package org.bedework.bwcli.jmxcmd;
+package org.bedework.bwcli.jmxcmd.schema;
+
+import org.bedework.bwcli.jmxcmd.SchemaCmd;
 
 import picocli.CommandLine;
 
@@ -10,13 +12,13 @@ import picocli.CommandLine;
  * Date: 11/11/16
  * Time: 21:47
  */
-@CommandLine.Command(name = "noteschema",
+@CommandLine.Command(name = "synch",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Create the notifier schema"})
-public class CmdNotifierSchema extends SchemaCmd {
+                "Create the synch schema"})
+public class CmdSynchSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(client().notifierSchema(export, out));
+    multiLine(client().syncSchema(export, out));
   }
 }

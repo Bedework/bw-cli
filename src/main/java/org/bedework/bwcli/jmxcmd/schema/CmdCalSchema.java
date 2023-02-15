@@ -1,7 +1,9 @@
 /* ********************************************************************
     Appropriate copyright notice
 */
-package org.bedework.bwcli.jmxcmd;
+package org.bedework.bwcli.jmxcmd.schema;
+
+import org.bedework.bwcli.jmxcmd.SchemaCmd;
 
 import picocli.CommandLine;
 
@@ -10,13 +12,13 @@ import picocli.CommandLine;
  * Date: 11/11/16
  * Time: 21:47
  */
-@CommandLine.Command(name = "cardschema",
+@CommandLine.Command(name = "cal",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Create the carddav core schema"})
-public class CmdCardSchema extends SchemaCmd {
+                "Create the calendar core schema"})
+public class CmdCalSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(client().carddavSchema(export, out));
+    multiLine(client().coreSchema(export, out));
   }
 }

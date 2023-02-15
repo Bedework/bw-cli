@@ -1,7 +1,9 @@
 /* ********************************************************************
     Appropriate copyright notice
 */
-package org.bedework.bwcli.jmxcmd;
+package org.bedework.bwcli.jmxcmd.schema;
+
+import org.bedework.bwcli.jmxcmd.SchemaCmd;
 
 import picocli.CommandLine;
 
@@ -10,13 +12,13 @@ import picocli.CommandLine;
  * Date: 11/11/16
  * Time: 21:47
  */
-@CommandLine.Command(name = "evregschema",
+@CommandLine.Command(name = "note",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Create the eventreg schema"})
-public class CmdEventregSchema extends SchemaCmd {
+                "Create the notifier schema"})
+public class CmdNotifierSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(client().eventregSchema(export, out));
+    multiLine(client().notifierSchema(export, out));
   }
 }

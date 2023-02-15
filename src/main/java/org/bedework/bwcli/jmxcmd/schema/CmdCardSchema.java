@@ -1,7 +1,9 @@
 /* ********************************************************************
     Appropriate copyright notice
 */
-package org.bedework.bwcli.jmxcmd;
+package org.bedework.bwcli.jmxcmd.schema;
+
+import org.bedework.bwcli.jmxcmd.SchemaCmd;
 
 import picocli.CommandLine;
 
@@ -10,13 +12,13 @@ import picocli.CommandLine;
  * Date: 11/11/16
  * Time: 21:47
  */
-@CommandLine.Command(name = "selfregschema",
+@CommandLine.Command(name = "card",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Create the selfreg schema"})
-public class CmdSelfregSchema extends SchemaCmd {
+                "Create the carddav core schema"})
+public class CmdCardSchema extends SchemaCmd {
   public void doExecute() throws Throwable {
-    multiLine(client().selfregSchema(export, out));
+    multiLine(client().carddavSchema(export, out));
   }
 }

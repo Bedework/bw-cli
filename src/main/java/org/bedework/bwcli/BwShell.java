@@ -3,14 +3,10 @@
 */
 package org.bedework.bwcli;
 
-import org.bedework.bwcli.jmxcmd.CmdCalSchema;
-import org.bedework.bwcli.jmxcmd.CmdCardSchema;
-import org.bedework.bwcli.jmxcmd.CmdEventregSchema;
 import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
-import org.bedework.bwcli.jmxcmd.CmdNotifierSchema;
-import org.bedework.bwcli.jmxcmd.CmdSelfregSchema;
 import org.bedework.bwcli.jmxcmd.CmdTz;
 import org.bedework.bwcli.jmxcmd.index.CmdIdx;
+import org.bedework.bwcli.jmxcmd.schema.CmdSchema;
 import org.bedework.util.args.Args;
 
 import org.apache.commons.lang.SystemUtils;
@@ -61,13 +57,9 @@ public class BwShell {
           subcommands = {
                   PicocliCommands.ClearScreen.class,
                   CommandLine.HelpCommand.class,
-                  CmdCalSchema.class,
-                  CmdCardSchema.class,
-                  CmdEventregSchema.class,
                   CmdIdx.class,
                   CmdJmxSetAttr.class,
-                  CmdNotifierSchema.class,
-                  CmdSelfregSchema.class,
+                  CmdSchema.class,
                   CmdTz.class,
   })
   static public class CliCommands implements PicoCmdI {

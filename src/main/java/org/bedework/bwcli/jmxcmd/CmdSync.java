@@ -39,12 +39,6 @@ public class CmdSync extends JmxCmd {
       return;
     }
 
-    if ("schema".equals(attrCmd)) {
-      multiLine(jcc.syncSchema(cli.nextIs("export"),
-                               cli.optionalKeyString("out")));
-      return;
-    }
-
     if ("start".equals(attrCmd)) {
       jcc.syncStart();
       return;
