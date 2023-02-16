@@ -10,16 +10,15 @@ import picocli.CommandLine;
 /**
  * User: mike
  * Date: 11/11/16
- * Time: 21:46
+ * Time: 21:45
  */
-@CommandLine.Command(name = "sys",
+@CommandLine.Command(name = "stats",
         mixinStandardHelpOptions = true, version = "1.0",
-        subcommands = { CommandLine.HelpCommand.class,
-                        CmdAutokill.class,
-                        CmdSysStats.class,
-                        CmdTzid.class,
-        },
+        subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Set or display system settings."})
-public class CmdSystem extends PicoCmd {
+                "Get system statistics."})
+public class CmdSysStats extends PicoCmd {
+  public void doExecute() throws Throwable {
+    multiLine(client().sysStats());
+  }
 }

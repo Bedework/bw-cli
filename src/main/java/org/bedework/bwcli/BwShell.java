@@ -3,10 +3,19 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.bwcmd.CmdAdminGroups;
+import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
+import org.bedework.bwcli.jmxcmd.CmdRestoreCalData;
+import org.bedework.bwcli.jmxcmd.CmdSelfRegAdduser;
 import org.bedework.bwcli.jmxcmd.CmdTz;
+import org.bedework.bwcli.jmxcmd.bwengine.CmdSystem;
 import org.bedework.bwcli.jmxcmd.index.CmdIdx;
 import org.bedework.bwcli.jmxcmd.schema.CmdSchema;
+import org.bedework.bwcli.jmxcmd.synch.CmdSync;
+import org.bedework.bwcli.toolcmd.CmdTool;
+import org.bedework.bwcli.toolcmd.CmdToolSource;
+import org.bedework.bwcli.toolcmd.CmdToolUser;
 import org.bedework.util.args.Args;
 
 import org.apache.commons.lang.SystemUtils;
@@ -36,6 +45,7 @@ import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
@@ -57,9 +67,17 @@ public class BwShell {
           subcommands = {
                   PicocliCommands.ClearScreen.class,
                   CommandLine.HelpCommand.class,
+                  CmdAdminGroups.class,
                   CmdIdx.class,
                   CmdJmxSetAttr.class,
+                  CmdRestoreCalData.class,
                   CmdSchema.class,
+                  CmdSelfRegAdduser.class,
+                  CmdSync.class,
+                  CmdSystem.class,
+                  CmdTool.class,
+                  CmdToolSource.class,
+                  CmdToolUser.class,
                   CmdTz.class,
   })
   static public class CliCommands implements PicoCmdI {
@@ -67,6 +85,8 @@ public class BwShell {
     private final Config conf;
 
     private JolokiaConfigClient client;
+
+    private HttpClient cl;
 
     CliCommands(final Config conf) {
       this.conf = conf;
@@ -84,19 +104,44 @@ public class BwShell {
       return client;
     }
 
+    @Override
+    public HttpClient getCl() {
+      if (cl != null) {
+        return cl;
+      }
+
+      try {
+        cl = new HttpClient(new URI(conf.url));
+      } catch (final Throwable t) {
+        throw new RuntimeException(t);
+      }
+
+      return cl;
+    }
+
+    @Override
+    public String getLine() {
+      return conf.line;
+    }
+
+    @Override
     public PrintWriter getOut() {
       return out;
     }
 
+    @Override
     public void doExecute() {
       out.println(new CommandLine(this).getUsageMessage());
     }
   }
 
   static class Config {
+    String url;
     String jmxUrl;
     String id;
     String pw;
+    String line;
+    String cmdFile;
   }
 
   public static void main(final String[] args) {
@@ -109,6 +154,16 @@ public class BwShell {
       final Args pargs = new Args(args);
 
       while (pargs.more()) {
+        if (pargs.ifMatch("-cmds")) {
+          conf.cmdFile = pargs.next();
+          continue;
+        }
+
+        if (pargs.ifMatch("url")) {
+          conf.url = pargs.next();
+          continue;
+        }
+
         if (pargs.ifMatch("jmxUrl")) {
           conf.jmxUrl = pargs.next();
           continue;
@@ -147,7 +202,8 @@ public class BwShell {
 
       final Parser parser = new DefaultParser();
 
-      try (final Terminal terminal = TerminalBuilder.builder().build()) {
+      try (final Terminal terminal =
+                   TerminalBuilder.builder().build()) {
         final SystemRegistry systemRegistry =
                 new SystemRegistryImpl(parser,
                                        terminal,
@@ -183,12 +239,12 @@ public class BwShell {
         String rightPrompt = null;
 
         // start the shell and process input until the user quits with Ctrl-D
-        String line;
+
         while (true) {
           try {
             systemRegistry.cleanUp();
-            line = reader.readLine(prompt, rightPrompt, (MaskingCallback) null, null);
-            systemRegistry.execute(line);
+            conf.line = reader.readLine(prompt, rightPrompt, (MaskingCallback) null, null);
+            systemRegistry.execute(conf.line);
           } catch (final UserInterruptException ignored) {
             // Ignore
           } catch (final EndOfFileException eofe) {

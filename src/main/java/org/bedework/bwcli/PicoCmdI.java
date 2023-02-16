@@ -3,6 +3,8 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.bwcmd.HttpClient;
+
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
@@ -24,9 +26,13 @@ public interface PicoCmdI extends Runnable {
     }
   }
 
+  String getLine();
+
   PrintWriter getOut();
 
   JolokiaConfigClient client();
+
+  HttpClient getCl();
 
   default void multiLine(final List<String> resp) {
     if (resp == null) {

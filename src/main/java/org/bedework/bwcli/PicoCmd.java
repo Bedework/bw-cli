@@ -3,6 +3,8 @@
 */
 package org.bedework.bwcli;
 
+import org.bedework.bwcli.bwcmd.HttpClient;
+
 import picocli.CommandLine.ParentCommand;
 
 import java.io.PrintWriter;
@@ -23,11 +25,20 @@ public abstract class PicoCmd implements PicoCmdI {
   }
 
   @Override
+  public String getLine() {
+    return parent.getLine();
+  }
+
+  @Override
   public PrintWriter getOut() {
     return parent.getOut();
   }
 
   public JolokiaConfigClient client() {
     return parent.client();
+  }
+
+  public HttpClient getCl() {
+    return parent.getCl();
   }
 }
