@@ -29,11 +29,6 @@
 
     <dependency>
       <groupId>org.bedework</groupId>
-      <artifactId>bw-util-cli</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.bedework</groupId>
       <artifactId>bw-util-jolokia</artifactId>
     </dependency>
 
