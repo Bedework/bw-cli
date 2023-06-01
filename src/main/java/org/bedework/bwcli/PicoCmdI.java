@@ -46,6 +46,10 @@ public interface PicoCmdI extends Runnable {
   }
 
   default void info(final String msg) {
-    getOut().println(msg);
+    if (msg.endsWith("\n")) {
+      getOut().print(msg);
+    } else {
+      getOut().println(msg);
+    }
   }
 }
