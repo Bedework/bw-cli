@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>bw-cli</artifactId>
-  <version>5.0.1-SNAPSHOT</version>
+  <version>5.0.1</version>
   <name>Bedework: CLI</name>
   <description>A command line client for bedework system admin</description>
   <url>https://github.com/Bedework/bw-cli</url>
