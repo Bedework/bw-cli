@@ -4,11 +4,12 @@
   <parent>
     <groupId>org.bedework</groupId>
     <artifactId>bedework-parent</artifactId>
-    <version>44</version>
+    <version>66-SNAPSHOT</version>
   </parent>
 
   <artifactId>bw-cli</artifactId>
   <version>5.0.2-SNAPSHOT</version>
+  <packaging>pom</packaging>
   <name>Bedework: CLI</name>
   <description>A command line client for bedework system admin</description>
   <url>https://github.com/Bedework/bw-cli</url>
@@ -17,11 +18,17 @@
     <connection>scm:git:git@github.com:Bedework/bw-cli.git</connection>
     <developerConnection>scm:git:git@github.com:Bedework/bw-cli.git</developerConnection>
     <url>https://github.com/Bedework/bw-util</url>
-    <tag>HEAD</tag>
   </scm>
 
+  <modules>
+    <module>bw-cli-bwcmd</module>
+    <module>bw-cli-jmx</module>
+    <module>bw-cli-toolcmd</module>
+    <module>bw-cli-shell</module>
+  </modules>
+<!--
   <dependencies>
-    <!-- Bedework Dependencies -->
+    < ! - -  Bedework Dependencies - - >
     <dependency>
       <groupId>org.bedework</groupId>
       <artifactId>bw-access</artifactId>
@@ -67,7 +74,7 @@
       <artifactId>bw-logs</artifactId>
     </dependency>
 
-    <!-- Third Party Dependencies -->
+    < ! - - Third Party Dependencies - - >
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -131,28 +138,5 @@
       <artifactId>javax.servlet-api</artifactId>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-
-        <configuration>
-          <assembleDirectory>${project.build.directory}/client</assembleDirectory>
-          <programs>
-            <program>
-              <mainClass>org.bedework.bwcli.BwShell</mainClass>
-              <id>client</id>
-            </program>
-          </programs>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <groupId>org.apache.maven.plugins</groupId>
-      </plugin>
-    </plugins>
-  </build>
+-->
 </project>
