@@ -10,6 +10,8 @@
   </parent>
 
   <artifactId>bw-cli-shell</artifactId>
+  <name>Bedework: CLI shell</name>
+  <description>Main shell for command line client for bedework system admin</description>
 
   <dependencies>
     <dependency>

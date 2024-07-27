@@ -10,6 +10,8 @@
   </parent>
 
   <artifactId>bw-cli-toolcmd</artifactId>
+  <name>Bedework: CLI tool</name>
+  <description>Tool classes for command line client for bedework system admin</description>
 
   <dependencies>
     <dependency>

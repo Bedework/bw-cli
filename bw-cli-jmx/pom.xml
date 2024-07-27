@@ -10,6 +10,8 @@
   </parent>
 
   <artifactId>bw-cli-jmx</artifactId>
+  <name>Bedework: CLI - jmx</name>
+  <description>JNX commands for command line client for bedework system admin</description>
 
   <dependencies>
     <dependency>
