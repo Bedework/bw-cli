@@ -7,6 +7,7 @@ import org.bedework.bwcli.bwcmd.CmdAdminGroups;
 import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.bwcmd.JolokiaConfigClient;
 import org.bedework.bwcli.bwcmd.PicoCmdI;
+import org.bedework.bwcli.bwcmd.access.CmdAcl;
 import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
 import org.bedework.bwcli.jmxcmd.CmdRestoreCalData;
 import org.bedework.bwcli.jmxcmd.CmdSelfRegAdduser;
@@ -69,6 +70,7 @@ public class BwShell {
           subcommands = {
                   PicocliCommands.ClearScreen.class,
                   CommandLine.HelpCommand.class,
+                  CmdAcl.class,
                   CmdAdminGroups.class,
                   CmdIdx.class,
                   CmdJmxSetAttr.class,
