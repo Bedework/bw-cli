@@ -25,6 +25,7 @@
     <module>bw-cli-jmx</module>
     <module>bw-cli-toolcmd</module>
     <module>bw-cli-shell</module>
+    <module>bw-cli-dbtools</module>
   </modules>
 <!--
   <dependencies>
