@@ -19,7 +19,7 @@
 package org.bedework.bwcli.bwcmd.copiedCalFacade.responses;
 
 import org.bedework.bwcli.bwcmd.copiedCalFacade.BwGroup;
-import org.bedework.util.misc.ToString;
+import org.bedework.base.ToString;
 
 import java.util.Collection;
 

@@ -20,7 +20,7 @@
 package org.bedework.bwcli.bwcmd.copiedCalFacade;
 
 import org.bedework.access.WhoDefs;
-import org.bedework.util.misc.ToString;
+import org.bedework.base.ToString;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
