@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>bw-cli</artifactId>
-  <version>5.0.4-SNAPSHOT</version>
+  <version>5.0.4</version>
   <packaging>pom</packaging>
   <name>Bedework: CLI</name>
   <description>A command line client for bedework system admin</description>

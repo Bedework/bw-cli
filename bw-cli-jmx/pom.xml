@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.bedework</groupId>
     <artifactId>bw-cli</artifactId>
-    <version>5.0.4-SNAPSHOT</version>
+    <version>5.0.4</version>
   </parent>
 
   <artifactId>bw-cli-jmx</artifactId>
