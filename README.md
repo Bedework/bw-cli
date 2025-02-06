@@ -67,3 +67,18 @@ For full details, see [Sonatype's documentation for using Maven to publish relea
 * Mostly completed move to picocli
 * Mostly completed move to picocli. Removed more unused classes and dependency
 * Avoid adding extra line endings
+
+### 5.0.2
+* Update library versions
+* Refactor bw-cli into a multi-module project. Update library versions.
+
+### 5.0.3
+* Update library versions
+* Make AccessException subclass of RuntimeException.
+* ToString changes
+
+### 5.0.4
+* Update library versions
+* Add module for db interactions
+* Move response classes and ToString into bw-base module.
+* Pre-jakarta
