@@ -21,7 +21,7 @@ import org.bedework.bwcli.toolcmd.CmdToolSource;
 import org.bedework.bwcli.toolcmd.CmdToolUser;
 import org.bedework.util.args.Args;
 
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.fusesource.jansi.AnsiConsole;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.console.SystemRegistry;
