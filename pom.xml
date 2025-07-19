@@ -29,4 +29,36 @@
     <module>bw-cli-jolokia</module>
     <module>bw-cli-asciidocs</module>
   </modules>
+
+  <dependencyManagement>
+    <!-- These dependencies ensure all transitive dependencies
+       during builds of this project resolve to project.version
+       and NOT the version set in bedework-parent
+    -->
+    <dependencies>
+      <dependency>
+        <groupId>org.bedework</groupId>
+        <artifactId>bw-cli-bwcmd</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bedework</groupId>
+        <artifactId>bw-cli-jolokia</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bedework</groupId>
+        <artifactId>bw-cli-shell</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bedework</groupId>
+        <artifactId>bw-cli-toolcmd</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>
