@@ -10,11 +10,41 @@
   </parent>
 
   <artifactId>bw-cli-asciidocs</artifactId>
+  <packaging>pom</packaging>
+  <name>Bedework event registration: AsciiDoc source and docs generation</name>
 
-  <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
 
+        <executions>
+          <execution>
+            <id>copy-generated-asciidoc</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/../docs/</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/generated-docs</directory>
+                  <filtering>false</filtering>
+                  <includes>
+                    <include>index.html</include>
+                    <include>asciidoctor.css</include>
+                    <include>tocbot*/*</include>
+                    <include>docinfo/*</include>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
 </project>
