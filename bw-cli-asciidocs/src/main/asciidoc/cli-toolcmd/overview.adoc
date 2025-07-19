@@ -1,0 +1,6 @@
+[[util-cli]]
+== Util-cli
+Provides generic utility classes for CLI support.
+
+This module is due for an overhaul.
+

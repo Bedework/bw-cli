@@ -1,0 +1,12 @@
+=== Using this project
+Add the artifact(s) as a dependency to your project:
+
+[source]
+----
+      <dependency>
+        <groupId>org.bedework</groupId>
+        <artifactId>bw-cli-shell</artifactId>
+      </dependency>
+----
+
+This module also provides the runnable client code.

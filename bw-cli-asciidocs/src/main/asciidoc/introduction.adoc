@@ -1,0 +1,5 @@
+[[introduction]]
+== Introduction
+This project provides a cli for https://www.apereo.org/projects/bedework[Bedework].
+
+This documentation is mostly a place-holder.
