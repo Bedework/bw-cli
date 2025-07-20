@@ -11,7 +11,7 @@
 
   <artifactId>bw-cli-asciidocs</artifactId>
   <packaging>pom</packaging>
-  <name>Bedework event registration: AsciiDoc source and docs generation</name>
+  <name>Bedework cli: AsciiDoc source and docs generation</name>
 
   <build>
     <plugins>
