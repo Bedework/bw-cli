@@ -26,7 +26,6 @@ import org.jolokia.client.BasicAuthenticator;
 import org.jolokia.client.J4pClient;
 import org.jolokia.client.request.J4pExecRequest;
 import org.jolokia.client.request.J4pReadRequest;
-import org.jolokia.client.request.J4pReadResponse;
 import org.jolokia.client.request.J4pResponse;
 import org.jolokia.client.request.J4pWriteRequest;
 
@@ -87,16 +86,18 @@ public class JolokiaClient implements Logged {
   public void writeVal(final String objectName,
                        final String name,
                        final Object val) throws Throwable {
-    final J4pWriteRequest request =
+    final var request =
             new J4pWriteRequest(objectName, name, val);
+    request.setPreferredHttpMethod("POST");
     getClient().execute(request);
   }
 
   public String readString(final String objectName,
                            final String name) throws Throwable {
-    final J4pReadRequest request =
+    final var request =
             new J4pReadRequest(objectName, name);
-    final J4pReadResponse response = getClient().execute(request);
+    request.setPreferredHttpMethod("POST");
+    final var response = getClient().execute(request);
     return response.getValue();
   }
 
@@ -109,10 +110,11 @@ public class JolokiaClient implements Logged {
    */
   public List<String> execStringList(final String objectName,
                                      final String operation) throws Throwable {
-      final J4pExecRequest execRequest =
-              new J4pExecRequest(objectName, operation);
-      final J4pResponse response = getClient().execute(execRequest);
-      return (List<String>)response.getValue();
+    final var execRequest =
+            new J4pExecRequest(objectName, operation);
+    execRequest.setPreferredHttpMethod("POST");
+    final var response = getClient().execute(execRequest);
+    return response.getValue();
   }
 
   /**
@@ -125,11 +127,12 @@ public class JolokiaClient implements Logged {
   public String execString(final String objectName,
                            final String operation,
                            final Object... args) throws Throwable {
-    final J4pExecRequest execRequest =
+    final var execRequest =
             new J4pExecRequest(objectName, operation, args);
+    execRequest.setPreferredHttpMethod("POST");
     final J4pResponse<J4pExecRequest> response =
             getClient().execute(execRequest);
-    return (String)response.getValue();
+    return response.getValue();
   }
 
   /**
@@ -142,16 +145,17 @@ public class JolokiaClient implements Logged {
   public Object exec(final String objectName,
                      final String operation,
                      final Object... args) throws Throwable {
-    final J4pExecRequest execRequest =
+    final var execRequest =
             new J4pExecRequest(objectName, operation, args);
-    final J4pResponse response = getClient().execute(execRequest);
+    execRequest.setPreferredHttpMethod("POST");
+    final var response = getClient().execute(execRequest);
     return response.getValue();
   }
 
   public void execute(final String objectName,
                       final String operation,
                       final Object... args) throws Throwable {
-    final J4pExecRequest execRequest =
+    final var execRequest =
             new J4pExecRequest(objectName, operation, args);
     getClient().execute(execRequest);
   }
@@ -225,7 +229,7 @@ public class JolokiaClient implements Logged {
         info("Still running...");
 
         final long now = System.currentTimeMillis();
-        curSecs = (now - start) / 1000;
+        curSecs = (double)(now - start) / 1000;
 
         synchronized (this) {
           this.wait(pollWait);
@@ -251,11 +255,11 @@ public class JolokiaClient implements Logged {
     }
   }
 
-  /* ====================================================================
+  /* ======================================================
    *                   Logged methods
-   * ==================================================================== */
+   * ====================================================== */
 
-  private BwLogger logger = new BwLogger();
+  private final BwLogger logger = new BwLogger();
 
   @Override
   public BwLogger getLogger() {
