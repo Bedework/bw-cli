@@ -24,7 +24,7 @@ public class CmdRebuildIdx extends PicoCmd {
           description = {"specify type of index"}, arity = "0..1")
   private String type;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     if (type == null) {
       multiLine(client().rebuildIndexes());
       return;

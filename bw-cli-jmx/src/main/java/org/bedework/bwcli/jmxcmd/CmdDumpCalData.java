@@ -12,21 +12,21 @@ import picocli.CommandLine;
  * Date: 11/11/16
  * Time: 21:48
  */
-@CommandLine.Command(name = "restoreCal",
+@CommandLine.Command(name = "dumpCal",
         mixinStandardHelpOptions = true, version = "1.0",
         subcommands = { CommandLine.HelpCommand.class },
         description = {
-                "Restore the calendar data from the default or supplied ",
-                "data path. If a path is supplied it must be ",
+                "Dump the calendar data to the supplied ",
+                "data path. The path must be ",
                 "reachable by the server and will be set as the ",
-                "output data path."})
-public class CmdRestoreCalData extends PicoCmd {
+                "input data path."})
+public class CmdDumpCalData extends PicoCmd {
   @CommandLine.Parameters(index = "0",
           paramLabel = "<path>",
           description = {"path to data"}, arity = "0..1")
   private String path;
 
   public void doExecute() {
-    multiLine(client().restoreCalData(path));
+    multiLine(client().dumpCalData(path));
   }
 }

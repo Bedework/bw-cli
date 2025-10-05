@@ -19,7 +19,7 @@ import picocli.CommandLine.Command;
         description = {
                 "List open search indexes."})
 public class CmdListIdx extends PicoCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().listIndexes());
   }
 }

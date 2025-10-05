@@ -19,7 +19,7 @@ import picocli.CommandLine.Command;
         description = {
                 "Start synch engine."})
 public class CmdStart extends PicoCmd {
-  public void doExecute() throws Throwable {
-    client().syncStart();
+  public void doExecute() {
+    check(client().syncStart());
   }
 }

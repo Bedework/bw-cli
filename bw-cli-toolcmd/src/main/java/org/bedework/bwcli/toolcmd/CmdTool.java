@@ -24,7 +24,7 @@ public class CmdTool extends PicoCmd {
           description = {"command to execute"}, arity = "1")
   private String[] cmd;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     final String line = getLine();
 
     final int pos = line.indexOf("tool");

@@ -30,7 +30,7 @@ public class CmdJmxSetAttr extends PicoCmd {
           description = {"specify attribute value"}, arity = "1")
   private String attrval;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     client().setAttr(mbean, attrname, attrval);
   }
 }

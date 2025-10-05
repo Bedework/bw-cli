@@ -23,7 +23,7 @@ public class CmdIdxStats extends PicoCmd {
           description = {"specify index name"}, arity = "1")
   private String indexName;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().indexStats(indexName).toString());
   }
 }

@@ -24,7 +24,7 @@ public class CmdGetAttr extends PicoCmd {
           description = {"name of attribute"}, arity = "1")
   private String attrname;
 
-  public void doExecute() throws Throwable {
-    client().getSyncAttr(attrname);
+  public void doExecute() {
+    check(client().getSyncAttr(attrname));
   }
 }

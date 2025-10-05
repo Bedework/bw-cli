@@ -3,8 +3,6 @@
 */
 package org.bedework.bwcli.bwcmd;
 
-import org.bedework.bwcli.bwcmd.HttpClient;
-
 import picocli.CommandLine.ParentCommand;
 
 import java.io.PrintWriter;
@@ -15,14 +13,6 @@ import java.io.PrintWriter;
 public abstract class PicoCmd implements PicoCmdI {
   @ParentCommand
   PicoCmdI parent;
-
-  public void run() {
-    try {
-      doExecute();
-    } catch (final Throwable t) {
-      t.printStackTrace(parent.getOut());
-    }
-  }
 
   @Override
   public String getLine() {

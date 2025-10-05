@@ -64,10 +64,6 @@ public class CmdTz extends PicoCmd {
                        paramLabel = "<attributeValue>",
                        description = "attribute value")
                final String attrval) {
-    try {
-      client().setTzAttr(attrname, attrval);
-    } catch (final Throwable t) {
-        t.printStackTrace(getOut());
-    }
+    check(client().setTzAttr(attrname, attrval));
   }
 }

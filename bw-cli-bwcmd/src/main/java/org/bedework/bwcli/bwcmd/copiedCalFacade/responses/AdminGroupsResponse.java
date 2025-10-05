@@ -18,8 +18,9 @@
 */
 package org.bedework.bwcli.bwcmd.copiedCalFacade.responses;
 
-import org.bedework.bwcli.bwcmd.copiedCalFacade.BwGroup;
 import org.bedework.base.ToString;
+import org.bedework.base.response.Response;
+import org.bedework.bwcli.bwcmd.copiedCalFacade.BwGroup;
 
 import java.util.Collection;
 
@@ -27,7 +28,8 @@ import java.util.Collection;
  *
  * @author Mike Douglass douglm - spherical cow
  */
-public class AdminGroupsResponse extends Response {
+public class AdminGroupsResponse
+        extends Response<AdminGroupsResponse> {
   private Collection<BwGroup> groups;
 
   /**
@@ -46,9 +48,7 @@ public class AdminGroupsResponse extends Response {
   }
 
   @Override
-  public void toStringSegment(final ToString ts) {
-    super.toStringSegment(ts);
-
-    ts.append("groups", getGroups());
+  public ToString toStringSegment(final ToString ts) {
+    return super.toStringSegment(ts).append("groups", getGroups());
   }
 }

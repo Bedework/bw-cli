@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the calendar core schema"})
 public class CmdCalSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().coreSchema(export, out));
   }
 }

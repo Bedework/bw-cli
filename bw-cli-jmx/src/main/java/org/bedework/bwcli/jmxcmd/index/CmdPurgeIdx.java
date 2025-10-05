@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Purge the old indexes."})
 public class CmdPurgeIdx extends PicoCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().purgeIndexes());
   }
 }

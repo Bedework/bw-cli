@@ -24,9 +24,9 @@ public class CmdAutokill extends PicoCmd {
           description = {"delay in minutes"}, arity = "0..1")
   private Integer delay;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     if (delay != null) {
-      client().setAutoKillMinutes(delay);
+      check(client().setAutoKillMinutes(delay));
     }
     info("Autokill delay = " + client().getAutoKillMinutes());
   }

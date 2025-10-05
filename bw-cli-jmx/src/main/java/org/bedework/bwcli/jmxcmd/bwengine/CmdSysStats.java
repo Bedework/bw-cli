@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Get system statistics."})
 public class CmdSysStats extends PicoCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().sysStats());
   }
 }

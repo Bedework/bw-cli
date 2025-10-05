@@ -20,11 +20,16 @@ import picocli.CommandLine;
         description = {
                 "List the admin groups."})
 public class CmdAdminGroups extends PicoCmd {
-  public void doExecute() throws Throwable {
-    final AdminGroupsResponse adgrs =
-            getCl().getJson("/feeder/admingroups/json.gdo",
-                            AdminGroupsResponse.class);
-    
+  public void doExecute() {
+    final AdminGroupsResponse adgrs;
+    try {
+      adgrs = getCl().getJson("/feeder/admingroups/json.gdo",
+                              AdminGroupsResponse.class);
+    } catch (final Exception e) {
+      info(e);
+      return;
+    }
+
     if (adgrs == null) {
       info("No response");
       return;
@@ -35,7 +40,7 @@ public class CmdAdminGroups extends PicoCmd {
     for (final BwGroup gr: adgrs.getGroups()) {
       final BwAdminGroup adgr = (BwAdminGroup)gr;
       
-      info(String.valueOf(i) + ": " + adgr.getAccount() + " " + adgr.getDescription());
+      info(i + ": " + adgr.getAccount() + " " + adgr.getDescription());
       i++;
     }
   }

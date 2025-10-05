@@ -44,7 +44,7 @@ public class CmdSelfRegAdduser extends PicoCmd {
   private String pw;
 
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().selfregAddUser(account, first, last, email, pw));
   }
 }

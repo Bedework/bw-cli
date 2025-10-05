@@ -53,7 +53,7 @@ public class HttpClient extends PooledHttpClient {
     return hdrs;
   }
 
-  private String encode(final String val) throws Throwable {
+  private String encode(final String val) {
     return URLEncoder.encode(val, StandardCharsets.UTF_8);
   }
 
@@ -86,7 +86,7 @@ public class HttpClient extends PooledHttpClient {
     }
 
     void multiPar(final String name,
-                  final String[] value) throws Throwable {
+                  final String[] value) {
       if ((value == null) || (value.length == 0)) {
         return;
       }
@@ -97,7 +97,7 @@ public class HttpClient extends PooledHttpClient {
     }
 
     void multiPar(final String name,
-                  final List<String> value) throws Throwable {
+                  final List<String> value) {
       if (Util.isEmpty(value)) {
         return;
       }
@@ -108,7 +108,7 @@ public class HttpClient extends PooledHttpClient {
     }
 
     void par(final String name,
-             final List<String> value) throws Throwable {
+             final List<String> value) {
       if (Util.isEmpty(value)) {
         return;
       }
@@ -135,7 +135,7 @@ public class HttpClient extends PooledHttpClient {
       return req.toString();
     }
 
-    private static String encode(final String val) throws Throwable {
+    private static String encode(final String val) {
       return URLEncoder.encode(val, StandardCharsets.UTF_8);
     }
   }

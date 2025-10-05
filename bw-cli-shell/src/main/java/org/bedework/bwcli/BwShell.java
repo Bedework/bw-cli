@@ -8,6 +8,7 @@ import org.bedework.bwcli.bwcmd.HttpClient;
 import org.bedework.bwcli.bwcmd.JolokiaConfigClient;
 import org.bedework.bwcli.bwcmd.PicoCmdI;
 import org.bedework.bwcli.bwcmd.access.CmdAcl;
+import org.bedework.bwcli.jmxcmd.CmdDumpCalData;
 import org.bedework.bwcli.jmxcmd.CmdJmxSetAttr;
 import org.bedework.bwcli.jmxcmd.CmdRestoreCalData;
 import org.bedework.bwcli.jmxcmd.CmdSelfRegAdduser;
@@ -74,6 +75,7 @@ public class BwShell {
                   CmdAdminGroups.class,
                   CmdIdx.class,
                   CmdJmxSetAttr.class,
+                  CmdDumpCalData.class,
                   CmdRestoreCalData.class,
                   CmdSchema.class,
                   CmdSelfRegAdduser.class,

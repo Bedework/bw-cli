@@ -24,7 +24,7 @@ public class CmdReindex extends PicoCmd {
           paramLabel = "<docType>",
           description = {"specify type of index"}, arity = "1")
   private String docType;
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().reindex(docType));
   }
 }

@@ -24,7 +24,7 @@ public class CmdAclDecode extends PicoCmd {
           description = {"specify encoded acl"}, arity = "1")
   private String encodedAcl;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     final Acl acl = Acl.decode(encodedAcl);
 
     info(acl.toString());

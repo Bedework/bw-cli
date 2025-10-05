@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the synch schema"})
 public class CmdSynchSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().syncSchema(export, out));
   }
 }

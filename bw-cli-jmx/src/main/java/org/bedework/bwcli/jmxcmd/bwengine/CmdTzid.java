@@ -24,9 +24,9 @@ public class CmdTzid extends PicoCmd {
           description = {"tzid for system"}, arity = "0..1")
   private String tzid;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     if (tzid != null) {
-      client().setSystemTzid(tzid);
+      check(client().setSystemTzid(tzid));
     }
     info(client().getSystemTzid());
   }

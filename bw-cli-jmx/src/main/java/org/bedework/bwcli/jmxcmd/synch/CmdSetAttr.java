@@ -30,7 +30,7 @@ public class CmdSetAttr extends PicoCmd {
           description = {"value of attribute"}, arity = "1")
   private String value;
 
-  public void doExecute() throws Throwable {
-    client().setSyncAttr(attrname, value);
+  public void doExecute() {
+    check(client().setSyncAttr(attrname, value));
   }
 }

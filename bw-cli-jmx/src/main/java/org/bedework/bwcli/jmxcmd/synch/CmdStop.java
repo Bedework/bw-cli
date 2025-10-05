@@ -19,7 +19,7 @@ import picocli.CommandLine.Command;
         description = {
                 "Stop synch engine."})
 public class CmdStop extends PicoCmd {
-  public void doExecute() throws Throwable {
-    client().syncStop();
+  public void doExecute() {
+    check(client().syncStop());
   }
 }

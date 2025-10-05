@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the notifier schema"})
 public class CmdNotifierSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().notifierSchema(export, out));
   }
 }

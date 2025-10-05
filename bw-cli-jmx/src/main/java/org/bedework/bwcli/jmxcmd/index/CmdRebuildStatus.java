@@ -19,7 +19,7 @@ import picocli.CommandLine.Command;
         description = {
                 "Show status of index rebuild"})
 public class CmdRebuildStatus extends PicoCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().rebuildIdxStatus());
   }
 }

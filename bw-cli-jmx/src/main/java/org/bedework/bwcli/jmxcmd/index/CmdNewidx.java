@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create new indexes."})
 public class CmdNewidx extends PicoCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().newIndexes());
   }
 }

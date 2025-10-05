@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the selfreg schema"})
 public class CmdSelfregSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().selfregSchema(export, out));
   }
 }

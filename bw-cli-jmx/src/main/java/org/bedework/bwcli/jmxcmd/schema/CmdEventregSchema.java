@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the eventreg schema"})
 public class CmdEventregSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().eventregSchema(export, out));
   }
 }

@@ -24,7 +24,7 @@ public class CmdResched extends PicoCmd {
           description = {"id of subscription"}, arity = "1")
   private String id;
 
-  public void doExecute() throws Throwable {
-    client().syncResched(id);
+  public void doExecute() {
+    check(client().syncResched(id));
   }
 }

@@ -24,7 +24,7 @@ public class CmdToolUser extends PicoCmd {
           description = {"user account"}, arity = "1")
   private String account;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     info(client().setCmdutilUser(account));
   }
 }

@@ -32,7 +32,7 @@ public class CmdMakeIdxProd extends PicoCmd {
   public CmdMakeIdxProd() {
   }
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     if (all) {
       info(client().makeAllIdxProd());
       return;

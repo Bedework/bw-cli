@@ -18,7 +18,7 @@ import picocli.CommandLine;
         description = {
                 "Create the carddav core schema"})
 public class CmdCardSchema extends SchemaCmd {
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     multiLine(client().carddavSchema(export, out));
   }
 }

@@ -18,11 +18,13 @@
 */
 package org.bedework.bwcli.bwcmd;
 
+import org.bedework.base.response.GetEntitiesResponse;
+import org.bedework.base.response.GetEntityResponse;
+import org.bedework.base.response.Response;
 import org.bedework.util.jmx.ConfBase;
 import org.bedework.util.jolokia.JolokiaClient;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.bedework.bwcli.bwcmd.copiedCalFacade.Configurations.cmdutilMbean;
 import static org.bedework.bwcli.bwcmd.copiedCalFacade.Configurations.dbConfMbean;
@@ -58,89 +60,125 @@ public class JolokiaConfigClient extends JolokiaClient {
    * @param url Usually something like "http://localhost:8080/hawtio/jolokia"
    */
   public JolokiaConfigClient(final String url,
-                             final String id, 
+                             final String id,
                              final String pw) {
     super(url, id, pw);
   }
 
-  public String setCmdutilUser(final String account) throws Throwable {
+  public GetEntityResponse<String> setCmdutilUser(final String account)  {
     return execCmdutilCmd("user " + account);
   }
 
-  public String execCmdutilCmd(final String cmd) throws Throwable {
+  public GetEntityResponse<String> execCmdutilCmd(final String cmd) {
     return execString(cmdutilMbean, "exec", cmd);
   }
 
-  public List<String> coreSchema(final boolean export,
-                                 final String out) throws Throwable {
+  public GetEntitiesResponse<String> coreSchema(final boolean export,
+                                                final String out) {
     return doSchema(dbConfMbean, export, out);
   }
 
-  public String listIndexes() throws Throwable {
+  public GetEntityResponse<String> listIndexes() {
     return execString(indexMbean, "listIndexes");
   }
 
-  public String purgeIndexes() throws Throwable {
+  public GetEntityResponse<String> purgeIndexes() {
     return execString(indexMbean, "purgeIndexes");
   }
 
-  public String newIndexes() throws Throwable {
+  public GetEntityResponse<String> newIndexes() {
     return execString(indexMbean, "newIndexes");
   }
 
-  public List<String> rebuildIndexes() throws Throwable {
-    execute(indexMbean, "rebuildIndex");
+  public GetEntitiesResponse<String> rebuildIndexes()  {
+    final var resp = new GetEntitiesResponse<String>();
 
-    String status;
-    do {
-      status = waitCompletion(indexMbean);
-      multiLine(execStringList(indexMbean, "rebuildStatus"));
-    } while (status.equals(ConfBase.statusTimedout));
+    final var eresp =
+            execute(indexMbean, "rebuildIndex");
+    if (!eresp.isOk()) {
+      return resp.fromResponse(eresp);
+    }
 
-    return execStringList(indexMbean, "rebuildStatus");
+    return waitRebuildCompletion();
   }
 
-  public List<String> sysStats() throws Throwable {
+  public GetEntitiesResponse<String> sysStats()  {
     return execStringList(sysMonitorMbean, "showValues");
   }
 
-  public List<String> rebuildEntityIndex(final String docType) throws Throwable {
-    String status =
-            execString(indexMbean, "rebuildEntityIndex", docType);
+  public GetEntitiesResponse<String> rebuildEntityIndex(final String docType)  {
+    final var resp = new GetEntitiesResponse<String>();
 
-    if (!"Started".equals(status)) {
-      return Collections.singletonList("Rebuild start failed: status was " + status);
+    final var eresp =
+            execString(indexMbean, "rebuildEntityIndex", docType);
+    if (!eresp.isOk()) {
+      return resp.fromResponse(eresp);
     }
 
+    final var status = eresp.getEntity();
+    if (!"Started".equals(status)) {
+      return resp.setEntities(Collections.singletonList(
+              "Rebuild start failed: status was " + status));
+    }
+
+    return waitRebuildCompletion();
+  }
+
+  public GetEntitiesResponse<String> waitRebuildCompletion() {
+    final var resp = new GetEntitiesResponse<String>();
+
+    GetEntityResponse<String> wc;
     do {
-      status = waitCompletion(indexMbean);
-      multiLine(execStringList(indexMbean, "rebuildStatus"));
-    } while (status.equals(ConfBase.statusTimedout));
+      wc = waitCompletion(indexMbean);
+      if (!wc.isOk()) {
+        return resp.fromResponse(wc);
+      }
+
+      final var esl = execStringList(indexMbean, "rebuildStatus");
+      if (!esl.isOk()) {
+        return resp.fromResponse(esl);
+      }
+      multiLine(esl.getEntities());
+    } while (wc.getEntity().equals(ConfBase.statusTimedout));
 
     return execStringList(indexMbean, "rebuildStatus");
   }
 
-  public Object indexStats(final String indexName) throws Throwable {
+  public Object indexStats(final String indexName)  {
     return exec(indexMbean, "indexStats", indexName);
   }
 
-  public String reindex(final String indexName) throws Throwable {
+  public GetEntityResponse<String> reindex(final String indexName)  {
     return execString(indexMbean, "reindex", indexName);
   }
 
-  public List<String> rebuildIdxStatus() throws Throwable {
+  public GetEntitiesResponse<String> rebuildIdxStatus()  {
     return execStringList(indexMbean, "rebuildStatus");
   }
 
-  public String makeIdxProd(final String indexName) throws Throwable {
+  public GetEntityResponse<String> makeIdxProd(final String indexName)  {
     return execString(indexMbean, "setProdAlias", indexName);
   }
 
-  public String makeAllIdxProd() throws Throwable {
+  public GetEntityResponse<String> makeAllIdxProd()  {
     return execString(indexMbean, "makeAllProd");
   }
 
-  public List<String> restoreCalData(final String path) throws Throwable {
+  public GetEntitiesResponse<String> dumpCalData(final String path)  {
+    if (path != null) {
+      writeVal(dumpRestoreMbean, "DataOut", path);
+    }
+
+    writeVal(dumpRestoreMbean, "NewDumpFormat", "true");
+
+    execute(dumpRestoreMbean, "dumpData");
+
+    waitCompletion(dumpRestoreMbean);
+
+    return execStringList(dumpRestoreMbean, "dumpStatus");
+  }
+
+  public GetEntitiesResponse<String> restoreCalData(final String path)  {
     if (path != null) {
       writeVal(dumpRestoreMbean, "DataIn", path);
     }
@@ -153,139 +191,158 @@ public class JolokiaConfigClient extends JolokiaClient {
 
     return execStringList(dumpRestoreMbean, "restoreStatus");
   }
-  
+
   /* System properties */
 
-  public void setSystemTzid(final String val) throws Throwable {
-    writeVal(systemMbean, "Tzid", val);
+  public Response<?> setSystemTzid(final String val)  {
+    return writeVal(systemMbean, "Tzid", val);
   }
-  
-  public String getSystemTzid() throws Throwable {
+
+  public GetEntityResponse<String> getSystemTzid()  {
     return readString(systemMbean, "Tzid");
   }
 
-  public void setRootUsers(final String val) throws Throwable {
-    writeVal(systemMbean, "RootUsers", val);
+  public Response<?> setRootUsers(final String val)  {
+    return writeVal(systemMbean, "RootUsers", val);
   }
 
-  public String getRootUsers() throws Throwable {
+  public GetEntityResponse<String> getRootUsers()  {
     return readString(systemMbean, "RootUsers");
   }
 
-  public void setAutoKillMinutes(final Integer val) throws Throwable {
-    writeVal(systemMbean, "AutoKillMinutes", val);
+  public Response<?> setAutoKillMinutes(final Integer val)  {
+    return writeVal(systemMbean, "AutoKillMinutes", val);
   }
 
-  public Integer getAutoKillMinutes() throws Throwable {
-    final String s = readString(systemMbean, "AutoKillMinutes");
-    return Integer.valueOf(s);
+  public GetEntityResponse<Integer> getAutoKillMinutes()  {
+    final var resp = new GetEntityResponse<Integer>();
+    final var r = readString(systemMbean, "AutoKillMinutes");
+
+    if (!r.isOk()) {
+      return resp.fromResponse(r);
+    }
+    return resp.setEntity(Integer.valueOf(r.getEntity()));
   }
 
   /* ----------- sync engine ----------------- */
 
-  public String getSyncAttr(final String attrName) throws Throwable {
+  public GetEntityResponse<String> getSyncAttr(final String attrName)  {
     return readString(syncEngineMbean, attrName);
   }
 
-  public void setSyncAttr(final String attrName,
-                          final String val) throws Throwable {
-    writeVal(syncEngineMbean, attrName, val);
+  public Response<?> setSyncAttr(final String attrName,
+                                 final String val)  {
+    return writeVal(syncEngineMbean, attrName, val);
   }
 
-  public List<String> syncSchema(final boolean export,
-                                 final String out) throws Throwable {
+  public GetEntitiesResponse<String> syncSchema(final boolean export,
+                                                final String out)  {
     return doSchema(syncEngineMbean, export, out);
   }
 
-  public void syncStart() throws Throwable {
-    execute(syncEngineMbean, "start");
+  public Response<?> syncStart()  {
+    return execute(syncEngineMbean, "start");
   }
 
-  public void syncStop() throws Throwable {
-    execute(syncEngineMbean, "stop");
+  public Response<?> syncStop()  {
+    return execute(syncEngineMbean, "stop");
   }
 
-  public String syncResched(final String id) throws Throwable {
+  public GetEntityResponse<String> syncResched(final String id)  {
     return execString(syncEngineMbean, "rescheduleNow", id);
   }
 
-  public void setSyncPrivKeys(final String val) throws Throwable {
-    writeVal(syncEngineMbean, "PrivKeys", val);
+  public Response<?> setSyncPrivKeys(final String val)  {
+    return writeVal(syncEngineMbean, "PrivKeys", val);
   }
 
   /* ----------- carddav ----------------- */
 
-  public List<String> carddavSchema(final boolean export,
-                                    final String out) throws Throwable {
+  public GetEntitiesResponse<String> carddavSchema(final boolean export,
+                                                   final String out)  {
     return doSchema(carddavUserDirMbean, export, out);
   }
 
   /* ----------- notifier ----------------- */
 
-  public List<String> notifierSchema(final boolean export,
-                                     final String out) throws Throwable {
+  public GetEntitiesResponse<String> notifierSchema(final boolean export,
+                                                    final String out)  {
     return doSchema(notifierMbean, export, out);
   }
 
   /* ----------- selfreg ----------------- */
 
-  public String selfregAddUser(final String account,
-                               final String first,
-                               final String last,
-                               final String email,
-                               final String pw) throws Throwable {
+  public GetEntityResponse<String> selfregAddUser(final String account,
+                                                  final String first,
+                                                  final String last,
+                                                  final String email,
+                                                  final String pw)  {
     return execString(selfregMbean, "addUser",
                       account, first, last, email, pw);
   }
 
-  public List<String> selfregSchema(final boolean export,
-                                    final String out) throws Throwable {
+  public GetEntitiesResponse<String> selfregSchema(final boolean export,
+                                                   final String out)  {
     return doSchema(selfregMbean, export, out);
   }
 
   /* ----------- eventreg ----------------- */
 
-  public List<String> eventregSchema(final boolean export,
-                                     final String out) throws Throwable {
+  public GetEntitiesResponse<String> eventregSchema(final boolean export,
+                                                    final String out)  {
     return doSchema(eventregMbean, export, out);
   }
 
   /* ----------- generic ----------------- */
 
-  public void setAttr(final String mbean,
-                      final String attrName,
-                      final String val) throws Throwable {
-    writeVal(mbean, attrName, val);
+  public Response<?> setAttr(final String mbean,
+                             final String attrName,
+                             final String val)  {
+    return writeVal(mbean, attrName, val);
   }
 
-  public List<String> doSchema(final String mbean,
-                               final boolean export,
-                               final String out) throws Throwable {
-    writeVal(mbean, "Export", String.valueOf(export));
+  public GetEntitiesResponse<String> doSchema(final String mbean,
+                                              final boolean export,
+                                              final String out)  {
+    final var resp = new GetEntitiesResponse<String>();
+    var wresp = writeVal(mbean, "Export", String.valueOf(export));
 
-    if (out != null) {
-      writeVal(mbean, "SchemaOutFile", out);
+    if (!wresp.isOk()) {
+      return resp.fromResponse(wresp);
     }
 
-    execute(mbean, "schema");
+    if (out != null) {
+      wresp = writeVal(mbean, "SchemaOutFile", out);
+      if (!wresp.isOk()) {
+        return resp.fromResponse(wresp);
+      }
+    }
 
-    waitCompletion(mbean);
+    final var eresp = execute(mbean, "schema");
+    if (!eresp.isOk()) {
+      return resp.fromResponse(eresp);
+    }
+
+    final var wcresp = waitCompletion(mbean);
+    if (!wcresp.isOk()) {
+      return resp.fromResponse(wcresp);
+    }
 
     return execStringList(mbean, "schemaStatus");
   }
 
   /* ----------- timezone server ----------------- */
 
-  public String getTzAttr(final String attrName) throws Throwable {
+  public GetEntityResponse<String> getTzAttr(final String attrName)  {
     return readString(tzsvrMbean, attrName);
   }
 
-  public void setTzAttr(final String attrName,
-                        final String val) throws Throwable {
-    writeVal(tzsvrMbean, attrName, val);
+  public Response<?> setTzAttr(final String attrName,
+                               final String val)  {
+    return writeVal(tzsvrMbean, attrName, val);
   }
 
-  public String tzRefreshData() throws Throwable {
+  public GetEntityResponse<String> tzRefreshData()  {
     return execString(tzsvrMbean, "refreshData");
   }
 }

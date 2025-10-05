@@ -18,6 +18,9 @@
 */
 package org.bedework.util.jolokia;
 
+import org.bedework.base.response.GetEntitiesResponse;
+import org.bedework.base.response.GetEntityResponse;
+import org.bedework.base.response.Response;
 import org.bedework.util.jmx.ConfBase;
 import org.bedework.util.logging.BwLogger;
 import org.bedework.util.logging.Logged;
@@ -29,7 +32,7 @@ import org.jolokia.client.request.J4pReadRequest;
 import org.jolokia.client.request.J4pResponse;
 import org.jolokia.client.request.J4pWriteRequest;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * User: mike Date: 12/3/15 Time: 00:32
@@ -83,22 +86,34 @@ public class JolokiaClient implements Logged {
     return client;
   }
 
-  public void writeVal(final String objectName,
-                       final String name,
-                       final Object val) throws Throwable {
-    final var request =
-            new J4pWriteRequest(objectName, name, val);
-    request.setPreferredHttpMethod("POST");
-    getClient().execute(request);
+  public Response<?> writeVal(final String objectName,
+                              final String name,
+                              final Object val) {
+    final var resp = new Response<>();
+    try {
+      final var request =
+              new J4pWriteRequest(objectName, name, val);
+      request.setPreferredHttpMethod("POST");
+      getClient().execute(request);
+      return resp;
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
-  public String readString(final String objectName,
-                           final String name) throws Throwable {
-    final var request =
-            new J4pReadRequest(objectName, name);
-    request.setPreferredHttpMethod("POST");
-    final var response = getClient().execute(request);
-    return response.getValue();
+  public GetEntityResponse<String> readString(
+          final String objectName,
+          final String name) {
+    final var resp = new GetEntityResponse<String>();
+    try {
+      final var request =
+              new J4pReadRequest(objectName, name);
+      request.setPreferredHttpMethod("POST");
+      final var response = getClient().execute(request);
+      return resp.setEntity(response.getValue());
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
   /**
@@ -106,33 +121,43 @@ public class JolokiaClient implements Logged {
    * @param objectName of mbean
    * @param operation that returns a list
    * @return the list
-   * @throws Throwable on error
    */
-  public List<String> execStringList(final String objectName,
-                                     final String operation) throws Throwable {
-    final var execRequest =
-            new J4pExecRequest(objectName, operation);
-    execRequest.setPreferredHttpMethod("POST");
-    final var response = getClient().execute(execRequest);
-    return response.getValue();
+  public GetEntitiesResponse<String> execStringList(
+          final String objectName,
+          final String operation) {
+    final var resp = new GetEntitiesResponse<String>();
+    try {
+      final var execRequest =
+              new J4pExecRequest(objectName, operation);
+      execRequest.setPreferredHttpMethod("POST");
+      final var response = getClient().execute(execRequest);
+      return resp.setEntities(response.getValue());
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
   /**
    *
    * @param objectName of mbean
    * @param operation that returns a string
-   * @return the string
-   * @throws Throwable on error
+   * @return response holding the string
    */
-  public String execString(final String objectName,
-                           final String operation,
-                           final Object... args) throws Throwable {
-    final var execRequest =
-            new J4pExecRequest(objectName, operation, args);
-    execRequest.setPreferredHttpMethod("POST");
-    final J4pResponse<J4pExecRequest> response =
-            getClient().execute(execRequest);
-    return response.getValue();
+  public GetEntityResponse<String> execString(
+          final String objectName,
+          final String operation,
+          final Object... args) {
+    final var resp = new GetEntityResponse<String>();
+    try {
+      final var execRequest =
+              new J4pExecRequest(objectName, operation, args);
+      execRequest.setPreferredHttpMethod("POST");
+      final J4pResponse<J4pExecRequest> response =
+              getClient().execute(execRequest);
+      return resp.setEntity(response.getValue());
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
   /**
@@ -140,37 +165,47 @@ public class JolokiaClient implements Logged {
    * @param objectName of mbean
    * @param operation that returns a string
    * @return the object
-   * @throws Throwable on error
    */
-  public Object exec(final String objectName,
-                     final String operation,
-                     final Object... args) throws Throwable {
-    final var execRequest =
-            new J4pExecRequest(objectName, operation, args);
-    execRequest.setPreferredHttpMethod("POST");
-    final var response = getClient().execute(execRequest);
-    return response.getValue();
+  public GetEntityResponse<Object> exec(
+          final String objectName,
+          final String operation,
+          final Object... args) {
+    final var resp = new GetEntityResponse<>();
+    try {
+      final var execRequest =
+              new J4pExecRequest(objectName, operation, args);
+      execRequest.setPreferredHttpMethod("POST");
+      final var response = getClient().execute(execRequest);
+      return resp.setEntity(response.getValue());
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
-  public void execute(final String objectName,
-                      final String operation,
-                      final Object... args) throws Throwable {
-    final var execRequest =
-            new J4pExecRequest(objectName, operation, args);
-    getClient().execute(execRequest);
+  public Response<?> execute(final String objectName,
+                             final String operation,
+                             final Object... args) {
+    final var resp = new Response<>();
+    try {
+      final var execRequest =
+              new J4pExecRequest(objectName, operation, args);
+      getClient().execute(execRequest);
+      return resp;
+    } catch (final Throwable t) {
+      return resp.error(t);
+    }
   }
 
   /**
    *
    * @param objectName of mbean that has a String Status attribute
    * @return the current status
-   * @throws Throwable on error
    */
-  public String getStatus(final String objectName) throws Throwable {
+  public GetEntityResponse<String> getStatus(final String objectName) {
     return readString(objectName, "Status");
   }
 
-  public String getMemory() throws Throwable {
+  public GetEntityResponse<String> getMemory() {
     return execString("java.lang:type=Memory", "HeapMemoryUsage");
   }
 
@@ -179,7 +214,7 @@ public class JolokiaClient implements Logged {
    * @param objectName of mbean
    * @return String ending status - "Done" or success
    */
-  public String waitCompletion(final String objectName) {
+  public GetEntityResponse<String> waitCompletion(final String objectName) {
     return waitCompletion(objectName, 60, 10);
   }
 
@@ -190,12 +225,15 @@ public class JolokiaClient implements Logged {
    * @param pollSeconds poll interval
    * @return String ending status - "Done" or success
    */
-  public String waitCompletion(final String objectName,
-                               final long waitSeconds,
-                               final long pollSeconds) {
+  public GetEntityResponse<String> waitCompletion(
+          final String objectName,
+          final long waitSeconds,
+          final long pollSeconds) {
     /* The process will start off in stopped state.
-       If we see it stopped it's because it hasn't got going yet.
+       If we see it stopped, it's because it hasn't got going yet.
      */
+    final var resp = new GetEntityResponse<String>();
+
     try {
       final long start = System.currentTimeMillis();
       double curSecs;
@@ -204,11 +242,13 @@ public class JolokiaClient implements Logged {
       boolean starting = true;
 
       do {
-        final String status = getStatus(objectName);
+        final var statusResp = getStatus(objectName);
 
-        if (status == null) {
-          return null;
+        if (!statusResp.isOk()) {
+          return resp.fromResponse(statusResp);
         }
+
+        final var status = statusResp.getEntity();
 
         if (starting && status.equals(ConfBase.statusStopped)) {
           info("Waiting for process to start");
@@ -217,12 +257,12 @@ public class JolokiaClient implements Logged {
 
           if (status.equals(ConfBase.statusDone)) {
             info("Received status Done");
-            return status;
+            return resp;
           }
 
           if (!status.equals(ConfBase.statusRunning)) {
             error("Status is " + status);
-            return status;
+            return resp;
           }
         }
 
@@ -236,15 +276,16 @@ public class JolokiaClient implements Logged {
         }
       } while (curSecs < waitSeconds);
 
-      //error("Timedout waiting for completion");
-      return ConfBase.statusTimedout;
+      // Treat timedout as OK
+      return resp.setEntity(ConfBase.statusTimedout);
     } catch (final Throwable t) {
       error(t);
-      return ConfBase.statusFailed;
+      return resp.setStatus(Response.Status.failed)
+                 .setEntity(ConfBase.statusFailed);
     }
   }
 
-  protected void multiLine(final List<String> resp) {
+  protected void multiLine(final Collection<String> resp) {
     if (resp == null) {
       info("Null response");
       return;

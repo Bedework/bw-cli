@@ -30,7 +30,7 @@ public class CmdToolSource extends PicoCmd {
           description = {"path to file"}, arity = "1")
   private String path;
 
-  public void doExecute() throws Throwable {
+  public void doExecute() {
     try {
       final InputStream is = new FileInputStream(path.trim());
 
