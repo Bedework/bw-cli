@@ -58,6 +58,8 @@ jobs:
         run: |
           mvn -Pbedework-dev,depcheck --settings ./.github/workflows/settings.xml \
             --no-transfer-progress clean install -DskipTests \
+            -DossIndexUsername="${{secrets.OSSINDEXUSER}}" \
+            -DossIndexPassword="${{secrets.OSSINDEXPW}}" \
             -DnvdApiKey=${{secrets.nvdApiKey}} -DskipITs -Dmax.cvss.score=8 \
             org.owasp:dependency-check-maven:aggregate 
           #  -l ${{github.workspace}}/mvn-output.txt
@@ -68,6 +70,7 @@ jobs:
       - name: Copy to docs and push changes
         id: deploy
         run: |
+          # This is needed or we get "check your github settings"
           git config --local user.email "github-actions@users.noreply.github.com"
           git config --local user.name "github-actions"
           git pull
@@ -75,4 +78,5 @@ jobs:
           cp -r ./target/reports bw-cli-asciidocs/src/main/asciidoc/
           git add .
           git commit -m "deploy generated dependency check report"
+          # Could presumably fail here if somebody pushed after our pull 
           git push
